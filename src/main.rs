@@ -1,34 +1,22 @@
 use anyhow::Context as _;
 use poise::serenity_prelude::{self as serenity, GuildId};
-use serde::{Deserialize, Serialize};
+
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 
 use serenity::GatewayIntents;
 
+use crate::state::admins::Admins;
+use crate::state::init_all_state;
 use shuttle_persist::PersistInstance;
+use state::Data;
+
+mod state;
 
 // User data, which is stored and accessible in all command invocations
-struct Data {
-    bot_state: PersistInstance,
-}
+
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Admins(Vec<u64>);
-
-impl std::fmt::Display for Admins {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let raw_admins = &self.0;
-
-        let mut admins = String::new();
-        for admin in raw_admins {
-            admins.push_str(&format!("{}\n", admin))
-        }
-        write!(f, "{}", admins)
-    }
-}
 
 /// Check if bot is online
 #[poise::command(slash_command)]
@@ -55,7 +43,14 @@ async fn list_admins(ctx: Context<'_>) -> Result<(), Error> {
     let state = ctx.data();
     let admins = state.bot_state.load::<Admins>("admins")?;
 
-    ctx.say(admins.to_string()).await?;
+    let admins = admins.to_string();
+
+    if admins.is_empty() {
+        ctx.say("No admins found").await?;
+    } else {
+        ctx.say(admins.to_string()).await?;
+    }
+
     Ok(())
 }
 
@@ -98,7 +93,10 @@ async fn poise(
                 )
                 .await?;
 
-                Ok(Data { bot_state: persist })
+                let data = Data { bot_state: persist };
+                init_all_state(&data)?;
+
+                Ok(data)
             })
         })
         .build()
