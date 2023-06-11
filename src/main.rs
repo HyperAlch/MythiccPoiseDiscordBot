@@ -11,39 +11,46 @@ use crate::state::init_all_state;
 use shuttle_persist::PersistInstance;
 use state::Data;
 
+mod constants;
 mod state;
 
 // User data, which is stored and accessible in all command invocations
 
-type Error = Box<dyn std::error::Error + Send + Sync>;
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
 /// Check if bot is online
-#[poise::command(slash_command)]
+#[poise::command(slash_command, ephemeral)]
 async fn ping(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("I'm online!").await?;
     Ok(())
 }
 
 /// Add target user to admin list
-#[poise::command(slash_command)]
-async fn add_admin(ctx: Context<'_>) -> Result<(), Error> {
-    let state = ctx.data();
-    let _state = state.bot_state.save::<Admins>(
-        "admins",
-        Admins(vec![224597366324461568, 213501447185104896]),
-    )?;
-    ctx.say("Admin added!").await?;
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
+async fn add_admin(
+    ctx: Context<'_>,
+    #[description = "Selected user"] user: serenity::User,
+) -> Result<(), Error> {
+    let data = ctx.data();
+
+    let mut admins = Admins::load(data)?;
+    let successful = admins.add(data, user)?;
+
+    if successful {
+        ctx.say("User was added to the Admin list!").await?;
+    } else {
+        ctx.say("Admin is already registered...").await?;
+    }
+
     Ok(())
 }
 
 /// Display admin list
-#[poise::command(slash_command)]
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
 async fn list_admins(ctx: Context<'_>) -> Result<(), Error> {
     let state = ctx.data();
-    let admins = state.bot_state.load::<Admins>("admins")?;
-
-    let admins = admins.to_string();
+    let admins = Admins::load(state)?.to_string();
 
     if admins.is_empty() {
         ctx.say("No admins found").await?;
