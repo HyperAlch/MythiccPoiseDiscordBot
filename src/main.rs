@@ -8,6 +8,7 @@ use serenity::GatewayIntents;
 
 use crate::constants::MASTER_ADMIN;
 use crate::state::admins::Admins;
+use crate::state::games::Games;
 use crate::state::init_all_state;
 use shuttle_persist::PersistInstance;
 use state::Data;
@@ -93,6 +94,27 @@ async fn list_admins(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+/// Add a game role to the list of games
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
+async fn add_game(
+    ctx: Context<'_>,
+    #[description = "Selected user"] role: serenity::Role,
+) -> Result<(), Error> {
+    let role_id: u64 = role.id.into();
+    let data = ctx.data();
+
+    let mut games = Games::load(data)?;
+    let successful = games.add(data, role_id)?;
+
+    if successful {
+        ctx.say("Game was added to the game list!").await?;
+    } else {
+        ctx.say("Game is already registered...").await?;
+    }
+
+    Ok(())
+}
+
 #[shuttle_runtime::main]
 async fn poise(
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
@@ -116,7 +138,13 @@ async fn poise(
             // [IMPORTANT]
             //  The first command must always be ping() as the command listed on index 0
             //  will always be set as the one and only global command
-            commands: vec![ping(), add_admin(), list_admins(), remove_admin()],
+            commands: vec![
+                ping(),
+                add_admin(),
+                list_admins(),
+                remove_admin(),
+                add_game(),
+            ],
             ..Default::default()
         })
         .token(discord_token)
