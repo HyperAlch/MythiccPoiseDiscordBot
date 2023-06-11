@@ -6,6 +6,7 @@ use shuttle_secrets::SecretStore;
 
 use serenity::GatewayIntents;
 
+use crate::constants::MASTER_ADMIN;
 use crate::state::admins::Admins;
 use crate::state::init_all_state;
 use shuttle_persist::PersistInstance;
@@ -32,10 +33,11 @@ async fn add_admin(
     ctx: Context<'_>,
     #[description = "Selected user"] user: serenity::User,
 ) -> Result<(), Error> {
+    let user_id: u64 = user.id.into();
     let data = ctx.data();
 
     let mut admins = Admins::load(data)?;
-    let successful = admins.add(data, user)?;
+    let successful = admins.add(data, user_id)?;
 
     if successful {
         ctx.say("User was added to the Admin list!").await?;
@@ -46,10 +48,39 @@ async fn add_admin(
     Ok(())
 }
 
+/// Remove target user from admin list
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
+async fn remove_admin(
+    ctx: Context<'_>,
+    #[description = "Selected user"] user: serenity::User,
+) -> Result<(), Error> {
+    let user_id: u64 = user.id.into();
+
+    if user_id == MASTER_ADMIN {
+        ctx.say("Can not remove master admin!").await?;
+        return Ok(());
+    }
+
+    let data = ctx.data();
+
+    let mut admins = Admins::load(data)?;
+    let successful = admins.remove(data, user_id)?;
+
+    if successful {
+        ctx.say("User was remove from the Admin list!").await?;
+    } else {
+        ctx.say("User could not be found on the Admin list...")
+            .await?;
+    }
+
+    Ok(())
+}
+
 /// Display admin list
 #[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
 async fn list_admins(ctx: Context<'_>) -> Result<(), Error> {
     let state = ctx.data();
+
     let admins = Admins::load(state)?.to_string();
 
     if admins.is_empty() {
@@ -84,7 +115,7 @@ async fn poise(
             // [IMPORTANT]
             //  The first command must always be ping() as the command listed on index 0
             //  will always be set as the one and only global command
-            commands: vec![ping(), add_admin(), list_admins()],
+            commands: vec![ping(), add_admin(), list_admins(), remove_admin()],
             ..Default::default()
         })
         .token(discord_token)
