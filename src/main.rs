@@ -13,6 +13,7 @@ use shuttle_persist::PersistInstance;
 use state::Data;
 
 mod constants;
+mod extensions;
 mod state;
 
 // User data, which is stored and accessible in all command invocations
@@ -86,7 +87,7 @@ async fn list_admins(ctx: Context<'_>) -> Result<(), Error> {
     if admins.is_empty() {
         ctx.say("No admins found").await?;
     } else {
-        ctx.say(admins.to_string()).await?;
+        ctx.say(admins).await?;
     }
 
     Ok(())
