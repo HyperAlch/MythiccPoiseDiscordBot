@@ -115,6 +115,45 @@ async fn add_game(
     Ok(())
 }
 
+/// Remove a game role from the list of games
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
+async fn remove_game(
+    ctx: Context<'_>,
+    #[description = "Selected user"] role: serenity::Role,
+) -> Result<(), Error> {
+    let role_id: u64 = role.id.into();
+    let data = ctx.data();
+
+    let mut games = Games::load(data)?;
+
+    let successful = games.remove(data, role_id)?;
+
+    if successful {
+        ctx.say("Game was remove from the games list!").await?;
+    } else {
+        ctx.say("Game could not be found on the games list...")
+            .await?;
+    }
+
+    Ok(())
+}
+
+/// Display game list
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
+async fn list_games(ctx: Context<'_>) -> Result<(), Error> {
+    let state = ctx.data();
+
+    let games = Games::load(state)?.to_string();
+
+    if games.is_empty() {
+        ctx.say("No games found").await?;
+    } else {
+        ctx.say(games).await?;
+    }
+
+    Ok(())
+}
+
 #[shuttle_runtime::main]
 async fn poise(
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
@@ -144,6 +183,8 @@ async fn poise(
                 list_admins(),
                 remove_admin(),
                 add_game(),
+                list_games(),
+                remove_game(),
             ],
             ..Default::default()
         })

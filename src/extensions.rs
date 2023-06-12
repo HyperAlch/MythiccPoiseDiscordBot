@@ -1,17 +1,23 @@
-use poise::serenity_prelude::{User, UserId};
+use poise::serenity_prelude::{RoleId, User, UserId};
 
-pub trait InteractiveUsernameExt {
-    fn get_interactive_username(&self) -> String;
+pub trait InteractiveSnowflakeExt {
+    fn get_interactive(&self) -> String;
 }
 
-impl InteractiveUsernameExt for User {
-    fn get_interactive_username(&self) -> String {
+impl InteractiveSnowflakeExt for User {
+    fn get_interactive(&self) -> String {
         format!("<@{}>", &self.id.0)
     }
 }
 
-impl InteractiveUsernameExt for UserId {
-    fn get_interactive_username(&self) -> String {
+impl InteractiveSnowflakeExt for UserId {
+    fn get_interactive(&self) -> String {
         format!("<@{}>", &self.0)
+    }
+}
+
+impl InteractiveSnowflakeExt for RoleId {
+    fn get_interactive(&self) -> String {
+        format!("<@&{}>", &self.0)
     }
 }

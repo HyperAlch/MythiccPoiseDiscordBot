@@ -1,6 +1,7 @@
-use crate::state::BotStateInitialization;
 use crate::Data;
+use crate::{extensions::InteractiveSnowflakeExt, state::BotStateInitialization};
 
+use poise::serenity_prelude::RoleId;
 use serde::{Deserialize, Serialize};
 
 const KEY: &str = "games";
@@ -20,6 +21,20 @@ impl Default for Games {
     }
 }
 
+impl std::fmt::Display for Games {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let raw_games = &self.0;
+
+        let mut games = String::new();
+        for game in raw_games {
+            let game = RoleId(*game);
+            let game = game.get_interactive();
+            games.push_str(&format!("{}\n", game));
+        }
+        write!(f, "{}", games)
+    }
+}
+
 impl Games {
     pub fn load(data: &Data) -> Result<Self, crate::Error> {
         let games = data.bot_state.load::<Games>(KEY)?;
@@ -35,5 +50,18 @@ impl Games {
         }
 
         Ok(false)
+    }
+
+    pub fn remove(&mut self, data: &Data, role_id: u64) -> Result<bool, crate::Error> {
+        let index = self.0.iter().position(|&i| i == role_id);
+
+        match index {
+            Some(index) => {
+                self.0.remove(index);
+                data.bot_state.save::<Games>(KEY, self.clone())?;
+                Ok(true)
+            }
+            None => Ok(false),
+        }
     }
 }

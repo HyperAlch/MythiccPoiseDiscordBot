@@ -1,7 +1,7 @@
 use crate::Data;
 use crate::{constants::MASTER_ADMIN, state::BotStateInitialization};
 
-use crate::extensions::InteractiveUsernameExt;
+use crate::extensions::InteractiveSnowflakeExt;
 use poise::serenity_prelude::UserId;
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +23,7 @@ impl std::fmt::Display for Admins {
         let mut admins = String::new();
         for admin in raw_admins {
             let admin = UserId(*admin);
-            let admin = admin.get_interactive_username();
+            let admin = admin.get_interactive();
             admins.push_str(&format!("{}\n", admin));
         }
         write!(f, "{}", admins)
