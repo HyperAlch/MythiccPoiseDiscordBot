@@ -54,3 +54,48 @@ trait BotStateInitialization: std::default::Default {
         Ok(())
     }
 }
+
+trait SnowflakeStorage: BotStateInitialization + Clone {
+    fn load(&self, data: &Data) -> Result<Self, crate::Error>
+    where
+        for<'de> Self: Deserialize<'de>,
+    {
+        let admins = data.bot_state.load::<Self>(&self.get_key())?;
+        Ok(admins)
+    }
+
+    fn add(&mut self, data: &Data, id: u64) -> Result<bool, crate::Error>
+    where
+        for<'de> Self: Serialize,
+    {
+        if !self.snowflake_found(&id) {
+            self.push_snowflake(id);
+
+            data.bot_state.save::<Self>(&self.get_key(), self.clone())?;
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
+
+    fn remove(&mut self, data: &Data, id: u64) -> Result<bool, crate::Error>
+    where
+        for<'de> Self: Serialize,
+    {
+        let index = self.snowflakes().position(|&i| i == id);
+
+        match index {
+            Some(index) => {
+                self.remove_snowflake(index);
+                data.bot_state.save::<Self>(&self.get_key(), self.clone())?;
+                Ok(true)
+            }
+            None => Ok(false),
+        }
+    }
+
+    fn snowflake_found(&self, id: &u64) -> bool;
+    fn push_snowflake(&mut self, id: u64);
+    fn remove_snowflake(&mut self, index: usize);
+    fn snowflakes(&self) -> std::slice::Iter<'_, u64>;
+}
