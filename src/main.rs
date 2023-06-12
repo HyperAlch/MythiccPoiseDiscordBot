@@ -13,6 +13,8 @@ use crate::state::init_all_state;
 use shuttle_persist::PersistInstance;
 use state::Data;
 
+use state::SnowflakeStorage;
+
 mod constants;
 mod extensions;
 mod state;

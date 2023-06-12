@@ -18,7 +18,7 @@ pub fn init_all_state(data: &Data) -> Result<(), PersistError> {
     Ok(())
 }
 
-trait BotStateInitialization: std::default::Default {
+pub trait BotStateInitialization: std::default::Default {
     fn init_state_inner<T: Default + Serialize>(&self, data: &Data) -> Result<(), PersistError>
     where
         for<'de> Self: Deserialize<'de>,
@@ -55,14 +55,10 @@ trait BotStateInitialization: std::default::Default {
     }
 }
 
-trait SnowflakeStorage: BotStateInitialization + Clone {
-    fn load(&self, data: &Data) -> Result<Self, crate::Error>
+pub trait SnowflakeStorage: BotStateInitialization + Clone {
+    fn load(data: &Data) -> Result<Self, crate::Error>
     where
-        for<'de> Self: Deserialize<'de>,
-    {
-        let admins = data.bot_state.load::<Self>(&self.get_key())?;
-        Ok(admins)
-    }
+        for<'de> Self: Deserialize<'de>;
 
     fn add(&mut self, data: &Data, id: u64) -> Result<bool, crate::Error>
     where

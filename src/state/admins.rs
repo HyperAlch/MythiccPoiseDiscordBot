@@ -5,14 +5,16 @@ use crate::extensions::InteractiveSnowflakeExt;
 use poise::serenity_prelude::UserId;
 use serde::{Deserialize, Serialize};
 
+use super::SnowflakeStorage;
+
 const KEY: &str = "admins";
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Admins(pub Vec<u64>);
 
-impl BotStateInitialization for Admins {
-    fn get_key(&self) -> String {
-        KEY.to_string()
+impl Default for Admins {
+    fn default() -> Self {
+        Self(vec![MASTER_ADMIN])
     }
 }
 
@@ -30,39 +32,34 @@ impl std::fmt::Display for Admins {
     }
 }
 
-impl Default for Admins {
-    fn default() -> Self {
-        Self(vec![MASTER_ADMIN])
+impl BotStateInitialization for Admins {
+    fn get_key(&self) -> String {
+        KEY.to_string()
     }
 }
 
-impl Admins {
-    pub fn load(data: &Data) -> Result<Self, crate::Error> {
-        let admins = data.bot_state.load::<Admins>(KEY)?;
-        Ok(admins)
+impl SnowflakeStorage for Admins {
+    fn load(data: &Data) -> Result<Self, crate::Error>
+    where
+        for<'de> Self: Deserialize<'de>,
+    {
+        let data = data.bot_state.load::<Self>(KEY)?;
+        Ok(data)
     }
 
-    pub fn add(&mut self, data: &Data, user_id: u64) -> Result<bool, crate::Error> {
-        if !self.0.contains(&user_id) {
-            self.0.push(user_id);
-
-            data.bot_state.save::<Admins>(KEY, self.clone())?;
-            return Ok(true);
-        }
-
-        Ok(false)
+    fn snowflake_found(&self, id: &u64) -> bool {
+        self.0.contains(id)
     }
 
-    pub fn remove(&mut self, data: &Data, user_id: u64) -> Result<bool, crate::Error> {
-        let index = self.0.iter().position(|&i| i == user_id);
+    fn push_snowflake(&mut self, id: u64) {
+        self.0.push(id);
+    }
 
-        match index {
-            Some(index) => {
-                self.0.remove(index);
-                data.bot_state.save::<Admins>(KEY, self.clone())?;
-                Ok(true)
-            }
-            None => Ok(false),
-        }
+    fn snowflakes(&self) -> std::slice::Iter<'_, u64> {
+        self.0.iter()
+    }
+
+    fn remove_snowflake(&mut self, index: usize) {
+        self.0.remove(index);
     }
 }
