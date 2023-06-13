@@ -8,6 +8,7 @@ use shuttle_secrets::SecretStore;
 
 use serenity::GatewayIntents;
 
+use crate::checks::is_on_admin_list;
 use crate::constants::MASTER_ADMIN;
 
 use crate::state::admins::Admins;
@@ -18,6 +19,7 @@ use state::Data;
 
 use state::SnowflakeStorage;
 
+mod checks;
 mod constants;
 mod data_structs;
 mod extensions;
@@ -161,7 +163,7 @@ async fn list_games(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 /// "Delete 'x' amount of messages"
-#[poise::command(slash_command, ephemeral)]
+#[poise::command(slash_command, ephemeral, check = "is_on_admin_list")]
 async fn prune(
     ctx: Context<'_>,
     #[description = "Selected user"] amount: usize,
