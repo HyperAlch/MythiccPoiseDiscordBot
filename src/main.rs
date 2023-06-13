@@ -1,5 +1,7 @@
 use anyhow::Context as _;
+use poise::futures_util::StreamExt;
 use poise::serenity_prelude::{self as serenity, GuildId};
+use poise::serenity_prelude::{CacheHttp, MessageId};
 
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
@@ -7,6 +9,7 @@ use shuttle_secrets::SecretStore;
 use serenity::GatewayIntents;
 
 use crate::constants::MASTER_ADMIN;
+
 use crate::state::admins::Admins;
 use crate::state::games::Games;
 use crate::state::init_all_state;
@@ -16,6 +19,7 @@ use state::Data;
 use state::SnowflakeStorage;
 
 mod constants;
+mod data_structs;
 mod extensions;
 mod state;
 
@@ -156,6 +160,41 @@ async fn list_games(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+/// "Delete 'x' amount of messages"
+#[poise::command(slash_command, ephemeral)]
+async fn prune(
+    ctx: Context<'_>,
+    #[description = "Selected user"] amount: usize,
+) -> Result<(), Error> {
+    let http = ctx.http();
+
+    let target_channel = ctx.channel_id();
+    let mut messages = target_channel.messages_iter(http).boxed();
+    let mut message_ids: Vec<MessageId> = vec![];
+
+    while let Some(message_result) = messages.next().await {
+        match message_result {
+            Ok(message) => {
+                if message_ids.len() < amount {
+                    message_ids.push(message.id)
+                } else {
+                    break;
+                };
+            }
+            Err(_) => {
+                ctx.say("Error loading messages into prune process!")
+                    .await?;
+                return Ok(());
+            }
+        }
+    }
+
+    target_channel.delete_messages(http, message_ids).await?;
+    ctx.say(format!("{} message(s) deleted!", amount)).await?;
+
+    Ok(())
+}
+
 #[shuttle_runtime::main]
 async fn poise(
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
@@ -187,6 +226,7 @@ async fn poise(
                 add_game(),
                 list_games(),
                 remove_game(),
+                prune(),
             ],
             ..Default::default()
         })
