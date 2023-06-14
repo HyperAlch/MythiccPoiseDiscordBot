@@ -1,9 +1,7 @@
-use serde::{Deserialize, Serialize};
-
-use crate::state::admins::Admins;
-use shuttle_persist::{PersistError, PersistInstance};
-
 use self::games::Games;
+use crate::state::admins::Admins;
+use serde::{Deserialize, Serialize};
+use shuttle_persist::{PersistError, PersistInstance};
 pub mod admins;
 pub mod games;
 

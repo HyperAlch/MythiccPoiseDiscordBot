@@ -1,10 +1,8 @@
+use super::SnowflakeStorage;
 use crate::Data;
 use crate::{extensions::InteractiveSnowflakeExt, state::BotStateInitialization};
-
 use poise::serenity_prelude::RoleId;
 use serde::{Deserialize, Serialize};
-
-use super::SnowflakeStorage;
 
 const KEY: &str = "games";
 

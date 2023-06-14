@@ -1,11 +1,9 @@
+use super::SnowflakeStorage;
+use crate::extensions::InteractiveSnowflakeExt;
 use crate::Data;
 use crate::{constants::MASTER_ADMIN, state::BotStateInitialization};
-
-use crate::extensions::InteractiveSnowflakeExt;
 use poise::serenity_prelude::UserId;
 use serde::{Deserialize, Serialize};
-
-use super::SnowflakeStorage;
 
 const KEY: &str = "admins";
 
