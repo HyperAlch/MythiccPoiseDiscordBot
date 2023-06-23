@@ -860,6 +860,7 @@ name = "mythicc-poise-discord-bot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "poise",
  "serde",
  "shuttle-persist",

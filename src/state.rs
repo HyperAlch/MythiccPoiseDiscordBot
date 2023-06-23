@@ -1,7 +1,10 @@
-use self::games::Games;
+use self::{active_collectors::ActiveCollectors, games::Games};
 use crate::state::admins::Admins;
+use poise::serenity_prelude::{Cache, Role, RoleId};
 use serde::{Deserialize, Serialize};
 use shuttle_persist::{PersistError, PersistInstance};
+
+pub mod active_collectors;
 pub mod admins;
 pub mod games;
 
@@ -12,6 +15,7 @@ pub struct Data {
 pub fn init_all_state(data: &Data) -> Result<(), PersistError> {
     Admins::init_state(data)?;
     Games::init_state(data)?;
+    ActiveCollectors::init_state(data)?;
 
     Ok(())
 }
@@ -92,4 +96,22 @@ pub trait SnowflakeStorage: BotStateInitialization + Clone {
     fn push_snowflake(&mut self, id: u64);
     fn remove_snowflake(&mut self, index: usize);
     fn snowflakes(&self) -> std::slice::Iter<'_, u64>;
+}
+
+pub trait SnowflakesToRoles: SnowflakeStorage {
+    fn to_roles(&self, cache: &Cache) -> Vec<Role> {
+        let snowflakes = self.snowflakes();
+        let mut roles: Vec<Role> = vec![];
+
+        for snowflake in snowflakes {
+            let role = RoleId(*snowflake);
+            let role = role.to_role_cached(cache);
+            match role {
+                Some(value) => roles.push(value),
+                None => (),
+            }
+        }
+
+        roles
+    }
 }

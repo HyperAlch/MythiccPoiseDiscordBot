@@ -1,13 +1,16 @@
 use crate::checks::is_on_admin_list;
 use crate::constants::MASTER_ADMIN;
+use crate::data_enums::CustomId;
 use crate::state::admins::Admins;
 use crate::state::games::Games;
 use crate::state::SnowflakeStorage;
 use crate::Context;
 use crate::Error;
 use poise::futures_util::StreamExt;
+use poise::serenity_prelude::ButtonStyle;
 use poise::serenity_prelude::{self as serenity};
 use poise::serenity_prelude::{CacheHttp, MessageId};
+use std::format;
 
 /// Check if bot is online
 #[poise::command(slash_command, ephemeral)]
@@ -172,6 +175,32 @@ pub async fn prune(
 
     target_channel.delete_messages(http, message_ids).await?;
     ctx.say(format!("{} message(s) deleted!", amount)).await?;
+
+    Ok(())
+}
+
+/// Setup the 'Pick Your Games' menu
+#[poise::command(slash_command)]
+pub async fn pick_games_menu(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.send(|b| {
+        b.content("Pick Your Games").components(|c| {
+            c.create_action_row(|row| {
+                row.create_button(|button| {
+                    button
+                        .custom_id(CustomId::PickGamesAdd.to_string())
+                        .label("Add")
+                        .style(ButtonStyle::Success)
+                });
+                row.create_button(|button| {
+                    button
+                        .custom_id(CustomId::PickGamesRemove.to_string())
+                        .label("Remove")
+                        .style(ButtonStyle::Danger)
+                })
+            })
+        })
+    })
+    .await?;
 
     Ok(())
 }

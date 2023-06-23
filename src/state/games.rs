@@ -1,4 +1,4 @@
-use super::SnowflakeStorage;
+use super::{SnowflakeStorage, SnowflakesToRoles};
 use crate::Data;
 use crate::{extensions::InteractiveSnowflakeExt, state::BotStateInitialization};
 use poise::serenity_prelude::RoleId;
@@ -54,3 +54,5 @@ impl SnowflakeStorage for Games {
         self.0.remove(index);
     }
 }
+
+impl SnowflakesToRoles for Games {}

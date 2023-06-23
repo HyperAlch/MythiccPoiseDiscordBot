@@ -1,15 +1,19 @@
 use crate::state::init_all_state;
 use anyhow::Context as _;
-use poise::serenity_prelude::{self as serenity, GuildId};
+use poise::serenity_prelude::{self as serenity, GuildId, Interaction};
 use serenity::GatewayIntents;
 use shuttle_persist::PersistInstance;
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 use state::Data;
+use std::println;
+
 mod checks;
 mod constants;
+mod data_enums;
 mod data_structs;
 mod extensions;
+mod message_component_interactions;
 mod slash_commands;
 mod state;
 
@@ -17,6 +21,29 @@ mod state;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
+
+async fn event_handler(
+    ctx: &serenity::Context,
+    event: &poise::Event<'_>,
+    _ctx_poise: poise::FrameworkContext<'_, Data, Error>,
+    data: &Data,
+) -> Result<(), Error> {
+    match event {
+        poise::Event::GuildMemberAddition { new_member } => {
+            println!("New member: {}", new_member.user.name);
+        }
+        poise::Event::InteractionCreate { interaction } => match interaction {
+            Interaction::MessageComponent(message_component_interaction) => {
+                message_component_interactions::handle(ctx, message_component_interaction, data)
+                    .await?
+            }
+            _ => (),
+        },
+        _ => (),
+    }
+
+    Ok(())
+}
 
 #[shuttle_runtime::main]
 async fn poise(
@@ -50,7 +77,11 @@ async fn poise(
                 slash_commands::list_games(),
                 slash_commands::remove_game(),
                 slash_commands::prune(),
+                slash_commands::pick_games_menu(),
             ],
+            event_handler: |ctx, event, framework, data| {
+                Box::pin(event_handler(ctx, event, framework, data))
+            },
             ..Default::default()
         })
         .token(discord_token)
