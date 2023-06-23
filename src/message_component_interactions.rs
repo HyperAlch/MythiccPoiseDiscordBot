@@ -12,9 +12,9 @@ pub async fn handle(
     message_component_interaction: &MessageComponentInteraction,
     data: &Data,
 ) -> Result<(), crate::Error> {
-    let custom_id_string: &String = &message_component_interaction.data.custom_id;
-    let custom_id = CustomId::new(custom_id_string);
+    let custom_id = CustomId::new(&message_component_interaction.data.custom_id);
 
+    // List all interaction structs here
     let all_interactions = AllInteractions(vec![Box::new(
         pick_games_menu::PickGamesMenu::new(&custom_id).unwrap_or_default(),
     )]);
@@ -28,7 +28,7 @@ pub async fn handle(
         }
     }
 
-    invalid_interaction(ctx, message_component_interaction, custom_id_string).await?;
+    invalid_interaction(ctx, message_component_interaction, &custom_id).await?;
 
     Ok(())
 }
@@ -36,15 +36,13 @@ pub async fn handle(
 async fn invalid_interaction(
     ctx: &serenity::Context,
     message_component_interaction: &MessageComponentInteraction,
-    custom_id_string: &String,
+    custom_id: &CustomId,
 ) -> Result<(), crate::Error> {
     message_component_interaction
         .create_interaction_response(&ctx.http, |r| {
             r.interaction_response_data(|f| {
-                f.ephemeral(true).content(format!(
-                    "Invalid message component id: {}",
-                    custom_id_string
-                ))
+                f.ephemeral(true)
+                    .content(format!("Invalid message component id: {}", custom_id))
             })
         })
         .await?;

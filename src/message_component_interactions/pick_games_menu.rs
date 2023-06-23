@@ -12,6 +12,7 @@ pub struct PickGamesMenu(CustomId);
 
 #[async_trait]
 impl MsgComponentInteraction for PickGamesMenu {
+    // List all valid custom component ids here
     fn valid_custom_ids() -> Vec<CustomId> {
         vec![CustomId::PickGamesAdd, CustomId::PickGamesRemove]
     }
@@ -24,9 +25,10 @@ impl MsgComponentInteraction for PickGamesMenu {
     where
         Self: Sized,
     {
-        Self(custom_id.clone())
+        Self(*custom_id)
     }
 
+    // Match all valid custom component ids with their methods
     async fn inner_execute(
         &self,
         ctx: &serenity::Context,
@@ -45,6 +47,7 @@ impl MsgComponentInteraction for PickGamesMenu {
     }
 }
 
+// All component interaction methods defined here
 impl PickGamesMenu {
     pub async fn pick_games_button_pressed(
         ctx: &serenity::Context,

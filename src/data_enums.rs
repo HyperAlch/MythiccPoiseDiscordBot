@@ -1,4 +1,4 @@
-#[derive(PartialEq, Default, Clone)]
+#[derive(PartialEq, Default, Clone, Copy)]
 pub enum CustomId {
     PickGamesAdd,
     PickGamesRemove,
