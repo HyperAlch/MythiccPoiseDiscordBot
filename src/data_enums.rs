@@ -3,6 +3,7 @@ pub enum CustomId {
     PickGamesAdd,
     PickGamesRemove,
     PickGamesAddExecute,
+    PickGamesRemoveExecute,
     #[default]
     Invalid,
 }
@@ -13,6 +14,7 @@ impl CustomId {
             "pick-games-add" => Self::PickGamesAdd,
             "pick-games-remove" => Self::PickGamesRemove,
             "pick-games-add-execute" => Self::PickGamesAddExecute,
+            "pick-games-remove-execute" => Self::PickGamesRemoveExecute,
             _ => Self::Invalid,
         }
     }
@@ -24,6 +26,7 @@ impl std::fmt::Display for CustomId {
             Self::PickGamesAdd => "pick-games-add".into(),
             Self::PickGamesRemove => "pick-games-remove".into(),
             Self::PickGamesAddExecute => "pick-games-add-execute".into(),
+            Self::PickGamesRemoveExecute => "pick-games-remove-execute".into(),
             Self::Invalid => "__invalid__".into(),
         };
 
