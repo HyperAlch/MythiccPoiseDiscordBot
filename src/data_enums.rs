@@ -2,6 +2,7 @@
 pub enum CustomId {
     PickGamesAdd,
     PickGamesRemove,
+    PickGamesAddExecute,
     #[default]
     Invalid,
 }
@@ -11,7 +12,8 @@ impl CustomId {
         match custom_id {
             "pick-games-add" => Self::PickGamesAdd,
             "pick-games-remove" => Self::PickGamesRemove,
-            _ => CustomId::Invalid,
+            "pick-games-add-execute" => Self::PickGamesAddExecute,
+            _ => Self::Invalid,
         }
     }
 }
@@ -19,9 +21,10 @@ impl CustomId {
 impl std::fmt::Display for CustomId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let display_output: String = match *self {
-            CustomId::PickGamesAdd => "pick-games-add".into(),
-            CustomId::PickGamesRemove => "pick-games-remove".into(),
-            CustomId::Invalid => "__invalid__".into(),
+            Self::PickGamesAdd => "pick-games-add".into(),
+            Self::PickGamesRemove => "pick-games-remove".into(),
+            Self::PickGamesAddExecute => "pick-games-add-execute".into(),
+            Self::Invalid => "__invalid__".into(),
         };
 
         write!(f, "{}", display_output)

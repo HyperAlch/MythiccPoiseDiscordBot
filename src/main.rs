@@ -16,6 +16,7 @@ mod extensions;
 mod message_component_interactions;
 mod slash_commands;
 mod state;
+mod utils;
 
 // User data, which is stored and accessible in all command invocations
 
