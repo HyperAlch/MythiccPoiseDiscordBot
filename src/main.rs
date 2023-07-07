@@ -1,4 +1,4 @@
-use crate::state::init_all_state;
+use crate::{log_channel::VoiceEvent, state::init_all_state};
 use anyhow::Context as _;
 use poise::serenity_prelude::{self as serenity, GuildId, Interaction};
 use serenity::GatewayIntents;
@@ -13,6 +13,7 @@ mod constants;
 mod data_enums;
 mod data_structs;
 mod extensions;
+mod log_channel;
 mod message_component_interactions;
 mod slash_commands;
 mod state;
@@ -32,6 +33,10 @@ async fn event_handler(
     match event {
         poise::Event::GuildMemberAddition { new_member } => {
             println!("New member: {}", new_member.user.name);
+        }
+        poise::Event::VoiceStateUpdate { old, new } => {
+            let voice_event = VoiceEvent::new(old, new);
+            voice_event.post_to_log_channel(ctx, data).await?;
         }
         poise::Event::InteractionCreate { interaction } => match interaction {
             Interaction::MessageComponent(message_component_interaction) => {
@@ -55,6 +60,10 @@ async fn poise(
     let discord_token = secret_store
         .get("DISCORD_TOKEN")
         .context("'DISCORD_TOKEN' was not found")?;
+
+    let minor_events_channel = secret_store
+        .get("MINOR_EVENTS_CHANNEL")
+        .context("'MINOR_EVENTS_CHANNEL' was not found")?;
 
     let intents = GatewayIntents::GUILDS
         | GatewayIntents::GUILD_MESSAGES
@@ -98,7 +107,10 @@ async fn poise(
                 )
                 .await?;
 
-                let data = Data { bot_state: persist };
+                let data = Data {
+                    bot_state: persist,
+                    minor_events_channel,
+                };
                 init_all_state(&data)?;
 
                 Ok(data)

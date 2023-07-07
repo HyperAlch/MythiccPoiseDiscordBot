@@ -10,6 +10,7 @@ pub mod games;
 
 pub struct Data {
     pub bot_state: PersistInstance,
+    pub minor_events_channel: String,
 }
 
 pub fn init_all_state(data: &Data) -> Result<(), PersistError> {

@@ -1,4 +1,4 @@
-use poise::serenity_prelude::{RoleId, User, UserId};
+use poise::serenity_prelude::{ChannelId, RoleId, User, UserId};
 
 pub trait InteractiveSnowflakeExt {
     fn get_interactive(&self) -> String;
@@ -19,5 +19,11 @@ impl InteractiveSnowflakeExt for UserId {
 impl InteractiveSnowflakeExt for RoleId {
     fn get_interactive(&self) -> String {
         format!("<@&{}>", &self.0)
+    }
+}
+
+impl InteractiveSnowflakeExt for ChannelId {
+    fn get_interactive(&self) -> String {
+        format!("<#{}>", &self.0)
     }
 }
