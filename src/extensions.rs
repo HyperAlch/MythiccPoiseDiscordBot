@@ -4,6 +4,10 @@ pub trait InteractiveSnowflakeExt {
     fn get_interactive(&self) -> String;
 }
 
+pub trait FromStringSnowflakeExt {
+    fn from(value: String) -> Self;
+}
+
 impl InteractiveSnowflakeExt for User {
     fn get_interactive(&self) -> String {
         format!("<@{}>", &self.id.0)

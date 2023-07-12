@@ -1,12 +1,16 @@
-use crate::{log_channel::VoiceEvent, state::init_all_state};
+use crate::state::init_all_state;
 use anyhow::Context as _;
-use poise::serenity_prelude::{self as serenity, GuildId, Interaction};
+use log_channel::{
+    user_events::{UserChangeType, UserEvent},
+    voice_events::VoiceEvent,
+};
+use poise::serenity_prelude::{self as serenity, GuildId, Interaction, RoleId};
 use serenity::GatewayIntents;
 use shuttle_persist::PersistInstance;
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 use state::Data;
-use std::println;
+use std::{println, str::FromStr};
 
 mod checks;
 mod constants;
@@ -32,11 +36,48 @@ async fn event_handler(
 ) -> Result<(), Error> {
     match event {
         poise::Event::GuildMemberAddition { new_member } => {
-            println!("New member: {}", new_member.user.name);
+            let mut new_member = new_member.clone();
+
+            new_member
+                .add_role(&ctx.http, RoleId::from_str(data.follower_role.as_str())?)
+                .await?;
+
+            let event = UserEvent::UserJoin(new_member.user.id);
+            event.post_to_log_channel(ctx, data).await?;
+        }
+        poise::Event::GuildMemberRemoval {
+            guild_id: _,
+            user,
+            member_data_if_available: _,
+        } => {
+            let event = UserEvent::UserLeave(user.id);
+            event.post_to_log_channel(ctx, data).await?;
+        }
+        poise::Event::GuildBanAddition {
+            guild_id: _,
+            banned_user,
+        } => {
+            let event = UserEvent::UserBan(banned_user.id);
+            event.post_to_log_channel(ctx, data).await?;
+        }
+        poise::Event::GuildBanRemoval {
+            guild_id: _,
+            unbanned_user,
+        } => {
+            let event = UserEvent::UserUnban(unbanned_user.id);
+            event.post_to_log_channel(ctx, data).await?;
         }
         poise::Event::VoiceStateUpdate { old, new } => {
             let voice_event = VoiceEvent::new(old, new);
             voice_event.post_to_log_channel(ctx, data).await?;
+        }
+        poise::Event::GuildMemberUpdate {
+            old_if_available,
+            new,
+        } => {
+            if let Some(old) = old_if_available {
+                let event = UserEvent::UserChange(UserChangeType::new(old, new));
+            }
         }
         poise::Event::InteractionCreate { interaction } => match interaction {
             Interaction::MessageComponent(message_component_interaction) => {
@@ -64,6 +105,14 @@ async fn poise(
     let minor_events_channel = secret_store
         .get("MINOR_EVENTS_CHANNEL")
         .context("'MINOR_EVENTS_CHANNEL' was not found")?;
+
+    let major_events_channel = secret_store
+        .get("MAJOR_EVENTS_CHANNEL")
+        .context("'MAJOR_EVENTS_CHANNEL' was not found")?;
+
+    let follower_role = secret_store
+        .get("FOLLOWER_ROLE")
+        .context("'FOLLOWER_ROLE' was not found")?;
 
     let intents = GatewayIntents::GUILDS
         | GatewayIntents::GUILD_MESSAGES
@@ -110,6 +159,8 @@ async fn poise(
                 let data = Data {
                     bot_state: persist,
                     minor_events_channel,
+                    major_events_channel,
+                    follower_role,
                 };
                 init_all_state(&data)?;
 
