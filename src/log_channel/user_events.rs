@@ -1,9 +1,9 @@
-use std::{str::FromStr, vec};
+use std::str::FromStr;
 
 use chrono::Utc;
 use poise::serenity_prelude::{
     self as serenity,
-    colours::branding::{GREEN, RED},
+    colours::branding::{GREEN, RED, YELLOW},
     ChannelId, CreateEmbedAuthor, CreateEmbedFooter, Member, RoleId, UserId,
 };
 
@@ -18,7 +18,7 @@ pub enum UserEvent {
     UserLeave(UserId),
     UserBan(UserId),
     UserUnban(UserId),
-    UserChange(UserChangeType),
+    UserChange(UserId, UserChangeType),
 }
 
 pub enum UserChangeType {
@@ -26,15 +26,32 @@ pub enum UserChangeType {
     Unknown,
 }
 
+// Core functionality
 impl UserChangeType {
     pub fn new(old_state: &Member, new_state: &Member) -> Self {
         if old_state.roles != new_state.roles {
-            // Figure out what roles where added and removed
-            // Set RoleState using the result.
-            UserChangeType::RolesChanged(RoleState::new(vec![], vec![]))
+            UserChangeType::RolesChanged(Self::get_role_changes(old_state, new_state))
         } else {
             UserChangeType::Unknown
         }
+    }
+
+    fn get_role_changes(old_state: &Member, new_state: &Member) -> RoleState {
+        let new_roles: Vec<RoleId> = new_state
+            .roles
+            .clone()
+            .into_iter()
+            .filter(|r| !old_state.roles.contains(r))
+            .collect();
+
+        let old_roles: Vec<RoleId> = old_state
+            .roles
+            .clone()
+            .into_iter()
+            .filter(|r| !new_state.roles.contains(r))
+            .collect();
+
+        RoleState::new(new_roles, old_roles)
     }
 }
 
@@ -189,6 +206,64 @@ impl UserEvent {
             .await?;
         Ok(())
     }
+
+    async fn execute_user_changed_log(
+        ctx: &serenity::Context,
+        data: &Data,
+        user_id: UserId,
+        role_state: &RoleState,
+    ) -> Result<(), crate::Error> {
+        let target_channel = Self::get_major_event_channel(data);
+        let user = user_id.to_user(&ctx.http).await?;
+
+        let new_roles: String = role_state
+            .added
+            .iter()
+            .map(|x| x.get_interactive())
+            .collect();
+        let new_roles = new_roles.replace("><", "> <");
+
+        let old_roles: String = role_state
+            .removed
+            .iter()
+            .map(|x| x.get_interactive())
+            .collect();
+        let old_roles = old_roles.replace("><", "> <");
+
+        target_channel
+            .send_message(&ctx.http, |m| {
+                m.embed(|e| {
+                    let mut author = CreateEmbedAuthor::default();
+                    author.icon_url(get_avatar_url(&user));
+                    author.name(user.name.clone());
+
+                    let mut footer = CreateEmbedFooter::default();
+                    footer.text(format!("User ID: {}", user.id));
+
+                    let embed = e
+                        .title("Roles Updated")
+                        .color(YELLOW)
+                        .description("🔄 🔄 🔄");
+
+                    if new_roles.len() > 0 {
+                        embed.field("New Roles: ", new_roles, false);
+                    }
+
+                    if old_roles.len() > 0 {
+                        embed.field("Removed Roles: ", old_roles, false);
+                    }
+
+                    embed
+                        .timestamp(Utc::now())
+                        .set_author(author)
+                        .field("Username", format!("{}", user.id.get_interactive()), false)
+                        .set_footer(footer)
+                })
+            })
+            .await?;
+
+        Ok(())
+    }
 }
 
 // Core functionality
@@ -211,7 +286,12 @@ impl UserEvent {
             Self::UserUnban(user_id) => {
                 Self::execute_user_unban_guild_log(ctx, data, *user_id).await?;
             }
-            _ => {}
+            Self::UserChange(user_id, user_change_type) => match user_change_type {
+                UserChangeType::RolesChanged(role_state) => {
+                    Self::execute_user_changed_log(ctx, data, *user_id, role_state).await?;
+                }
+                UserChangeType::Unknown => (),
+            },
         }
 
         Ok(())

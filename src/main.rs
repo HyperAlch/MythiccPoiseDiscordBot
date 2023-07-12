@@ -10,7 +10,7 @@ use shuttle_persist::PersistInstance;
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 use state::Data;
-use std::{println, str::FromStr};
+use std::str::FromStr;
 
 mod checks;
 mod constants;
@@ -76,7 +76,8 @@ async fn event_handler(
             new,
         } => {
             if let Some(old) = old_if_available {
-                let event = UserEvent::UserChange(UserChangeType::new(old, new));
+                let event = UserEvent::UserChange(new.user.id, UserChangeType::new(old, new));
+                event.post_to_log_channel(ctx, data).await?;
             }
         }
         poise::Event::InteractionCreate { interaction } => match interaction {
