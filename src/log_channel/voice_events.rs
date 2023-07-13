@@ -110,7 +110,7 @@ impl VoiceEvent {
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user_id));
 
-                    e.title("Left Voice Chat")
+                    e.title("Moved Voice Chat")
                         .color(YELLOW)
                         .field("Left", old_channel_id.get_interactive(), true)
                         .field("Joined", new_channel_id.get_interactive(), true)

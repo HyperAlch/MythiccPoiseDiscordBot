@@ -180,7 +180,7 @@ pub async fn prune(
 }
 
 /// Setup the 'Pick Your Games' menu
-#[poise::command(slash_command)]
+#[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
 pub async fn pick_games_menu(ctx: Context<'_>) -> Result<(), Error> {
     ctx.send(|b| {
         b.content("Pick Your Games").components(|c| {

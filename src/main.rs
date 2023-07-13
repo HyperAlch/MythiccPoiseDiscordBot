@@ -153,7 +153,7 @@ async fn poise(
                 poise::builtins::register_in_guild(
                     ctx,
                     &commands[1..],
-                    GuildId(888144293989085224),
+                    GuildId(552690586977828874),
                 )
                 .await?;
 
