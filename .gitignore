@@ -3,3 +3,5 @@ Secrets.toml
 /shuttle_persist
 /.vscode
 /temp
+/secrets/deploy/Secrets.toml
+/secrets/test/Secrets.toml

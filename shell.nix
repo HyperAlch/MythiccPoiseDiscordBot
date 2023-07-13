@@ -15,6 +15,7 @@ in
   buildInputs = [ 
     pkgs.openssl
     pkgs.pkg-config
+    pkgs.bash
   ];
 
     
