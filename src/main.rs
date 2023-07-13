@@ -148,14 +148,17 @@ async fn poise(
         .intents(intents)
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
+                let guild_id = secret_store
+                    .get("GUILD_ID")
+                    .context("'GUILD_ID' was not found")?;
+
+                let guild_id = guild_id
+                    .parse::<u64>()
+                    .expect("'GUILD_ID' is not a valid u64");
+
                 let commands = &framework.options().commands;
                 poise::builtins::register_globally(ctx, &commands[..1]).await?;
-                poise::builtins::register_in_guild(
-                    ctx,
-                    &commands[1..],
-                    GuildId(552690586977828874),
-                )
-                .await?;
+                poise::builtins::register_in_guild(ctx, &commands[1..], GuildId(guild_id)).await?;
 
                 let data = Data {
                     bot_state: persist,
