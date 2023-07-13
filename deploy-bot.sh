@@ -8,7 +8,8 @@ rm ./Secrets.toml
 echo "Creating new 'Secrets.toml'..."
 cp ./secrets/deploy/Secrets.toml ./Secrets.toml
 
-echo "Restart Server Before Deployment? (y/n): "
+echo "[WARNING]: Resetting a server will destory all persisted data. Do not use lightly!"
+echo "Reset Server Before Deployment? (y/n): "
 read should_restart_server
 
 if [ $should_restart_server == "y" ]
