@@ -1,4 +1,6 @@
-use self::{active_collectors::ActiveCollectors, games::Games};
+use self::{
+    active_collectors::ActiveCollectors, games::Games, role_backups::RoleBackups, t_rooms::TRooms,
+};
 use crate::state::admins::Admins;
 use poise::serenity_prelude::{Cache, Role, RoleId};
 use serde::{Deserialize, Serialize};
@@ -7,18 +9,24 @@ use shuttle_persist::{PersistError, PersistInstance};
 pub mod active_collectors;
 pub mod admins;
 pub mod games;
+pub mod role_backups;
+pub mod t_rooms;
 
 pub struct Data {
     pub bot_state: PersistInstance,
     pub minor_events_channel: String,
     pub major_events_channel: String,
     pub follower_role: String,
+    pub triggered_role: String,
+    pub t_ids: Vec<(String, String)>,
 }
 
 pub fn init_all_state(data: &Data) -> Result<(), PersistError> {
     Admins::init_state(data)?;
     Games::init_state(data)?;
     ActiveCollectors::init_state(data)?;
+    RoleBackups::init_state(data)?;
+    TRooms::init_state(data)?;
 
     Ok(())
 }

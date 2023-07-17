@@ -10,10 +10,11 @@ use shuttle_persist::PersistInstance;
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 use state::Data;
-use std::str::FromStr;
+use std::{panic, str::FromStr};
 
 mod checks;
 mod constants;
+mod context_commands;
 mod data_enums;
 mod data_structs;
 mod extensions;
@@ -115,6 +116,35 @@ async fn poise(
         .get("FOLLOWER_ROLE")
         .context("'FOLLOWER_ROLE' was not found")?;
 
+    let triggered_role = secret_store
+        .get("TRIGGERED_ROLE")
+        .context("'TRIGGERED_ROLE' was not found")?;
+
+    let t_roles = secret_store
+        .get("T_ROLES")
+        .context("'T_ROLES' was not found")?;
+
+    let t_roles: Vec<String> = t_roles.split(",").map(|x| x.to_string()).collect();
+
+    let t_rooms = secret_store
+        .get("T_ROOMS")
+        .context("'T_ROOMS' was not found")?;
+
+    let t_rooms: Vec<String> = t_rooms.split(",").map(|x| x.to_string()).collect();
+
+    if t_roles.len() != t_rooms.len() {
+        panic!("T_ROLES and T_ROOMS are not the same length...");
+    }
+
+    let mut t_ids: Vec<(String, String)> = vec![];
+
+    for index in 0..t_roles.len() {
+        let t_role = t_roles[index].clone();
+        let t_room = t_rooms[index].clone();
+
+        t_ids.push((t_role, t_room));
+    }
+
     let intents = GatewayIntents::GUILDS
         | GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT
@@ -138,6 +168,7 @@ async fn poise(
                 slash_commands::remove_game(),
                 slash_commands::prune(),
                 slash_commands::pick_games_menu(),
+                context_commands::triggered(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
@@ -165,6 +196,8 @@ async fn poise(
                     minor_events_channel,
                     major_events_channel,
                     follower_role,
+                    triggered_role,
+                    t_ids,
                 };
                 init_all_state(&data)?;
 
