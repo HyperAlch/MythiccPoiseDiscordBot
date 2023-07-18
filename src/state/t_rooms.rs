@@ -67,7 +67,7 @@ impl TRooms {
         let target_room: u64 = target_room.into();
         let rooms = &mut self.0;
 
-        for mut room in rooms.iter_mut() {
+        for room in rooms.iter_mut() {
             if room.channel_id == target_room {
                 return Ok(Some(room));
             }
