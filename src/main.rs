@@ -169,6 +169,7 @@ async fn poise(
                 slash_commands::prune(),
                 slash_commands::pick_games_menu(),
                 context_commands::triggered(),
+                context_commands::release_trigger(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))

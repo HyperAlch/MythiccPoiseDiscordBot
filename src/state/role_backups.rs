@@ -38,6 +38,23 @@ impl RoleBackups {
 
         Ok(false)
     }
+
+    pub fn remove<U: Into<u64>>(
+        &mut self,
+        data: &Data,
+        user_id: U,
+    ) -> Result<Option<Vec<u64>>, crate::Error> {
+        let user_id: u64 = user_id.into();
+
+        if self.0.contains_key(&user_id) {
+            let return_data = self.0.remove(&user_id);
+            data.bot_state.save(&self.get_key(), self.clone())?;
+
+            return Ok(return_data);
+        }
+
+        Ok(None)
+    }
 }
 
 impl BotStateInitialization for RoleBackups {
