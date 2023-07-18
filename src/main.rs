@@ -168,6 +168,7 @@ async fn poise(
                 slash_commands::remove_game(),
                 slash_commands::prune(),
                 slash_commands::pick_games_menu(),
+                slash_commands::unlock_triggered_channel(),
                 context_commands::triggered(),
                 context_commands::release_trigger(),
             ],

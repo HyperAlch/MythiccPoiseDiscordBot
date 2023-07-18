@@ -51,7 +51,7 @@ pub async fn triggered(
             // Get the current state of all TRooms
             let mut t_rooms = TRooms::load(ctx.data())?;
 
-            let open_room = t_rooms.find_room(ctx.data())?;
+            let open_room = t_rooms.find_open_room(ctx.data())?;
 
             if let Some(open_room) = open_room {
                 let role = open_room.0;

@@ -3,6 +3,7 @@ use crate::constants::MASTER_ADMIN;
 use crate::data_enums::CustomId;
 use crate::state::admins::Admins;
 use crate::state::games::Games;
+use crate::state::t_rooms::TRooms;
 use crate::state::SnowflakeStorage;
 use crate::Context;
 use crate::Error;
@@ -201,6 +202,46 @@ pub async fn pick_games_menu(ctx: Context<'_>) -> Result<(), Error> {
         })
     })
     .await?;
+
+    Ok(())
+}
+
+/// "Unlock a triggered room for future use"
+#[poise::command(slash_command, ephemeral, check = "is_on_admin_list")]
+pub async fn unlock_triggered_channel(ctx: Context<'_>) -> Result<(), Error> {
+    let http = ctx.http();
+
+    let target_channel = ctx.channel_id();
+    let mut messages = target_channel.messages_iter(http).boxed();
+    let mut message_ids: Vec<MessageId> = vec![];
+
+    while let Some(message_result) = messages.next().await {
+        match message_result {
+            Ok(message) => message_ids.push(message.id),
+            Err(_) => {
+                ctx.say("Error loading messages into prune process!")
+                    .await?;
+                return Ok(());
+            }
+        }
+    }
+
+    // Find Room struct using target_channel, then toggle the lock
+    let mut t_rooms = TRooms::load(ctx.data())?;
+    let room = t_rooms.find_room(target_channel)?;
+
+    if let Some(&mut ref mut room) = room {
+        if !message_ids.is_empty() {
+            target_channel.delete_messages(http, message_ids).await?;
+        }
+        room.toggle_open();
+        let data = ctx.data();
+        t_rooms.save(data)?;
+
+        ctx.say("Room unlocked!!").await?;
+    } else {
+        ctx.say("This is NOT a triggered room!!").await?;
+    }
 
     Ok(())
 }

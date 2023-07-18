@@ -6,10 +6,10 @@ use std::str::FromStr;
 const KEY: &str = "t_rooms";
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
-pub struct TRooms(Vec<Room>);
+pub struct TRooms(pub Vec<Room>);
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
-struct Room {
+pub struct Room {
     role_id: u64,
     channel_id: u64,
     is_open: bool,
@@ -36,7 +36,7 @@ impl Room {
 
 // Main functionality
 impl TRooms {
-    pub fn find_room(&mut self, data: &Data) -> Result<Option<(u64, u64)>, crate::Error> {
+    pub fn find_open_room(&mut self, data: &Data) -> Result<Option<(u64, u64)>, crate::Error> {
         let mut toggle = false;
         let mut index: usize = 0;
 
@@ -52,12 +52,34 @@ impl TRooms {
             let rooms = &mut self.0;
             rooms[index].toggle_open();
 
-            data.bot_state.save(&self.get_key(), self.clone())?;
+            self.save(data)?;
 
             return Ok(Some((self.0[index].role_id, self.0[index].channel_id)));
         }
 
         Ok(None)
+    }
+
+    pub fn find_room<R: Into<u64>>(
+        &mut self,
+        target_room: R,
+    ) -> Result<Option<&mut Room>, crate::Error> {
+        let target_room: u64 = target_room.into();
+        let rooms = &mut self.0;
+
+        for mut room in rooms.iter_mut() {
+            if room.channel_id == target_room {
+                return Ok(Some(room));
+            }
+        }
+
+        Ok(None)
+    }
+
+    pub fn save(&self, data: &Data) -> Result<(), crate::Error> {
+        data.bot_state.save(&self.get_key(), self.clone())?;
+
+        Ok(())
     }
 }
 
@@ -73,7 +95,8 @@ impl TRooms {
 
     fn add(&mut self, data: &Data, room: Room) -> Result<(), crate::Error> {
         self.0.push(room);
-        data.bot_state.save(&self.get_key(), self.clone())?;
+
+        self.save(data)?;
 
         Ok(())
     }
