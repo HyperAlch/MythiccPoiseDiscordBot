@@ -8,6 +8,7 @@ use crate::state::SnowflakeStorage;
 use crate::Context;
 use crate::Error;
 use poise::futures_util::StreamExt;
+use poise::serenity_prelude::colours::branding::BLACK;
 use poise::serenity_prelude::ButtonStyle;
 use poise::serenity_prelude::{self as serenity};
 use poise::serenity_prelude::{CacheHttp, MessageId};
@@ -183,23 +184,35 @@ pub async fn prune(
 /// Setup the 'Pick Your Games' menu
 #[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
 pub async fn pick_games_menu(ctx: Context<'_>) -> Result<(), Error> {
+    let mut instructions = "".to_string();
+
+    instructions.push_str(":green_circle: **Add** - Press to get a dropdown of all available game roles that you don't already have, select the ones you want.\n\n");
+    instructions.push_str(":red_circle: **Remove** - Press to get a dropdown of all game roles currently assigned to you, select the ones you want to remove.\n\n");
+    instructions.push_str("**[IMPORTANT]\n\nDropdowns are meant for ONE TIME USE ONLY. Please press \"Dismiss message\" when you are done. \n\nThese temporary messages DO NOT automatically update to reflect role changes, you must press the buttons AGAIN to make any changes in the future!**");
+
     ctx.send(|b| {
-        b.content("Pick Your Games").components(|c| {
-            c.create_action_row(|row| {
-                row.create_button(|button| {
-                    button
-                        .custom_id(CustomId::PickGamesAdd.to_string())
-                        .label("Add")
-                        .style(ButtonStyle::Success)
-                });
-                row.create_button(|button| {
-                    button
-                        .custom_id(CustomId::PickGamesRemove.to_string())
-                        .label("Remove")
-                        .style(ButtonStyle::Danger)
+        b.content("~ Pick Your Games ~")
+            .embed(|e| {
+                e.title("Instructions")
+                    .color(BLACK)
+                    .description(instructions)
+            })
+            .components(|c| {
+                c.create_action_row(|row| {
+                    row.create_button(|button| {
+                        button
+                            .custom_id(CustomId::PickGamesAdd.to_string())
+                            .label("Add")
+                            .style(ButtonStyle::Success)
+                    });
+                    row.create_button(|button| {
+                        button
+                            .custom_id(CustomId::PickGamesRemove.to_string())
+                            .label("Remove")
+                            .style(ButtonStyle::Danger)
+                    })
                 })
             })
-        })
     })
     .await?;
 
