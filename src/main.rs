@@ -1,16 +1,18 @@
-use crate::state::init_all_state;
+use crate::{extensions::InteractiveSnowflakeExt, state::init_all_state};
 use anyhow::Context as _;
 use log_channel::{
     user_events::{UserChangeType, UserEvent},
     voice_events::VoiceEvent,
 };
-use poise::serenity_prelude::{self as serenity, GuildId, Interaction, RoleId};
+use poise::serenity_prelude::{
+    self as serenity, CacheHttp, ChannelId, GuildId, Interaction, RoleId,
+};
 use serenity::GatewayIntents;
 use shuttle_persist::PersistInstance;
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 use state::Data;
-use std::{panic, str::FromStr};
+use std::{panic, println, str::FromStr};
 
 mod checks;
 mod constants;
@@ -79,6 +81,45 @@ async fn event_handler(
             if let Some(old) = old_if_available {
                 let event = UserEvent::UserChange(new.user.id, UserChangeType::new(old, new));
                 event.post_to_log_channel(ctx, data).await?;
+
+                if let UserEvent::UserChange(_user_id, change_type) = event {
+                    if let UserChangeType::RolesChanged(role_state) = change_type {
+                        if role_state.added().len() > 0 {
+                            let added_roles: Vec<String> =
+                                role_state.added().iter().map(|x| x.to_string()).collect();
+
+                            let added_roles: Vec<&String> = added_roles
+                                .iter()
+                                .filter(|x| data.guild_apply_roles.contains(*x))
+                                .collect();
+                            if added_roles.len() > 0 {
+                                println!("Detected: {:?}", added_roles);
+                                let needs_to_apply_role =
+                                    RoleId::from_str(&data.needs_to_apply_role)
+                                        .expect("NEEDS_TO_APPLY_ROLE is not valid");
+
+                                {
+                                    let mut new_member = new.clone();
+                                    new_member.add_role(ctx.http(), needs_to_apply_role).await?;
+                                }
+
+                                let needs_to_apply_channel = &data.needs_to_apply_channel;
+                                let needs_to_apply_channel =
+                                    ChannelId::from_str(&needs_to_apply_channel)
+                                        .expect("NEEDS_TO_APPLY_CHANNEL is not valid");
+
+                                new.user
+                                    .direct_message(ctx.http(), |m| {
+                                        m.content(format!(
+                                            "# Guild Application Required!\nPlease apply at {}",
+                                            needs_to_apply_channel.get_interactive()
+                                        ))
+                                    })
+                                    .await?;
+                            }
+                        }
+                    }
+                }
             }
         }
         poise::Event::InteractionCreate { interaction } => match interaction {
@@ -131,6 +172,23 @@ async fn poise(
         .context("'T_ROOMS' was not found")?;
 
     let t_rooms: Vec<String> = t_rooms.split(",").map(|x| x.to_string()).collect();
+
+    let guild_apply_roles = secret_store
+        .get("GUILD_APPLY_ROLES")
+        .context("'GUILD_APPLY_ROLES' was not found")?;
+
+    let guild_apply_roles: Vec<String> = guild_apply_roles
+        .split(",")
+        .map(|x| x.to_string())
+        .collect();
+
+    let needs_to_apply_role = secret_store
+        .get("NEEDS_TO_APPLY_ROLE")
+        .context("'NEEDS_TO_APPLY_ROLE' was not found")?;
+
+    let needs_to_apply_channel = secret_store
+        .get("NEEDS_TO_APPLY_CHANNEL")
+        .context("'NEEDS_TO_APPLY_CHANNEL' was not found")?;
 
     if t_roles.len() != t_rooms.len() {
         panic!("T_ROLES and T_ROOMS are not the same length...");
@@ -200,6 +258,9 @@ async fn poise(
                     follower_role,
                     triggered_role,
                     t_ids,
+                    guild_apply_roles,
+                    needs_to_apply_role,
+                    needs_to_apply_channel,
                 };
                 init_all_state(&data)?;
 

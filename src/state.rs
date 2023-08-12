@@ -19,6 +19,9 @@ pub struct Data {
     pub follower_role: String,
     pub triggered_role: String,
     pub t_ids: Vec<(String, String)>,
+    pub guild_apply_roles: Vec<String>,
+    pub needs_to_apply_role: String,
+    pub needs_to_apply_channel: String,
 }
 
 pub fn init_all_state(data: &Data) -> Result<(), PersistError> {

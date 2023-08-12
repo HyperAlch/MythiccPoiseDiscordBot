@@ -64,6 +64,10 @@ impl RoleState {
     fn new(added: Vec<RoleId>, removed: Vec<RoleId>) -> Self {
         RoleState { added, removed }
     }
+
+    pub fn added(&self) -> &Vec<RoleId> {
+        &self.added
+    }
 }
 
 // Log channel functionality

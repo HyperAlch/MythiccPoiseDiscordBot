@@ -6,10 +6,13 @@ use crate::state::{Data, SnowflakeStorage, SnowflakesToRoles};
 use crate::utils::discord_cdn::get_avatar_url;
 use async_trait::async_trait;
 use chrono::Utc;
-use poise::serenity_prelude::colours::branding::YELLOW;
-use poise::serenity_prelude::{self as serenity, CreateEmbedAuthor, CreateEmbedFooter};
+use poise::serenity_prelude::colours::branding::{RED, YELLOW};
+use poise::serenity_prelude::{
+    self as serenity, ChannelId, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter,
+};
 use poise::serenity_prelude::{InteractionResponseType, MessageComponentInteraction};
 use poise::serenity_prelude::{Role, RoleId};
+use std::str::FromStr;
 use std::vec;
 
 #[derive(Default)]
@@ -137,7 +140,7 @@ impl PickGamesMenu {
     pub async fn pick_games_button_execute(
         ctx: &serenity::Context,
         message_component_interaction: &MessageComponentInteraction,
-        _data: &Data,
+        data: &Data,
     ) -> Result<(), crate::Error> {
         let mut user = message_component_interaction.member.clone();
 
@@ -166,6 +169,14 @@ impl PickGamesMenu {
 
             member.add_roles(&ctx.http, &selected_games).await?;
 
+            let guild_apply_roles: Vec<String> =
+                selected_games.iter().map(|x| x.to_string()).collect();
+
+            let guild_apply_roles: Vec<&String> = guild_apply_roles
+                .iter()
+                .filter(|x| data.guild_apply_roles.contains(*x))
+                .collect();
+
             let display_roles: String =
                 selected_games.iter().map(|x| x.get_interactive()).collect();
             let display_roles = display_roles.replace("><", "> <");
@@ -177,27 +188,43 @@ impl PickGamesMenu {
                         .interaction_response_data(|m| {
                             m.ephemeral(true);
                             if !invalid_execution {
-                                m.embed(|e| {
-                                    let mut author = CreateEmbedAuthor::default();
-                                    author.icon_url(get_avatar_url(&member.user));
-                                    author.name(&member.user.name);
+                                let mut e1 = CreateEmbed::default();
 
-                                    let mut footer = CreateEmbedFooter::default();
-                                    footer.text(format!("User ID: {}", member.user.id));
+                                let mut author = CreateEmbedAuthor::default();
+                                author.icon_url(get_avatar_url(&member.user));
+                                author.name(&member.user.name);
 
-                                    e.title("Roles Updated")
-                                        .color(YELLOW)
-                                        .description("🔄 🔄 🔄")
-                                        .field("New Roles: ", display_roles, true)
-                                        .timestamp(Utc::now())
-                                        .set_author(author)
-                                        .field(
-                                            "Display Name",
-                                            format!("{}", member.user.id.get_interactive(),),
-                                            false,
-                                        )
-                                        .set_footer(footer)
-                                })
+                                let mut footer = CreateEmbedFooter::default();
+                                footer.text(format!("User ID: {}", member.user.id));
+
+                                e1.title("Roles Updated")
+                                    .color(YELLOW)
+                                    .description("🔄 🔄 🔄")
+                                    .field("New Roles: ", display_roles, true)
+                                    .timestamp(Utc::now())
+                                    .set_author(author)
+                                    .field(
+                                        "Display Name",
+                                        format!("{}", member.user.id.get_interactive(),),
+                                        false,
+                                    )
+                                    .set_footer(footer);
+
+                                let mut e2 = CreateEmbed::default();
+                                e2.title("Guild Application Required!")
+                                    .description(format!(
+                                        "Please apply at {}",
+                                        ChannelId::from_str(&data.needs_to_apply_channel)
+                                            .expect("NEEDS_TO_APPLY_CHANNEL is not valid")
+                                            .get_interactive()
+                                    ))
+                                    .color(RED);
+
+                                if guild_apply_roles.len() > 0 {
+                                    m.add_embed(e2)
+                                } else {
+                                    m.add_embed(e1)
+                                }
                             } else {
                                 m.content("Invalid Operation...")
                             }
