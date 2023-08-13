@@ -3,7 +3,9 @@ use crate::constants::MASTER_ADMIN;
 use crate::data_enums::CustomId;
 use crate::state::admins::Admins;
 use crate::state::games::Games;
+use crate::state::guild_apply::GuildApply;
 use crate::state::t_rooms::TRooms;
+use crate::state::SnowflakeHashmapStorage;
 use crate::state::SnowflakeStorage;
 use crate::Context;
 use crate::Error;
@@ -254,6 +256,70 @@ pub async fn unlock_triggered_channel(ctx: Context<'_>) -> Result<(), Error> {
         ctx.say("Room unlocked!!").await?;
     } else {
         ctx.say("This is NOT a triggered room!!").await?;
+    }
+
+    Ok(())
+}
+
+/// Add a game / channel union to the list of games that support guild applications
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
+pub async fn add_guild_application(
+    ctx: Context<'_>,
+    #[description = "Game name"] game_name: String,
+    #[description = "Log channel"] channel: serenity::Channel,
+) -> Result<(), Error> {
+    let channel_id: u64 = channel.id().into();
+    let data = ctx.data();
+
+    let mut guild_apply = GuildApply::load(data)?;
+    let successful = guild_apply.add(data, game_name.clone(), channel_id)?;
+
+    if successful {
+        ctx.say(format!("{} was added to the apply list!", game_name))
+            .await?;
+    } else {
+        ctx.say("Key and / or value is already registered").await?;
+    }
+
+    Ok(())
+}
+
+/// Display the list of games that support guild applications
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
+pub async fn list_guild_application(ctx: Context<'_>) -> Result<(), Error> {
+    let data = ctx.data();
+
+    let guild_apply = GuildApply::load(data)?;
+
+    if guild_apply.0.is_empty() {
+        ctx.say("Guild application list empty").await?;
+    } else {
+        ctx.say(guild_apply.to_string()).await?;
+    }
+
+    Ok(())
+}
+
+/// Remove a game / channel union from the list of games that support guild applications
+#[poise::command(slash_command, ephemeral, required_permissions = "ADMINISTRATOR")]
+pub async fn remove_guild_application(
+    ctx: Context<'_>,
+    #[description = "Game name"] game_name: String,
+) -> Result<(), Error> {
+    let data = ctx.data();
+
+    let mut guild_apply = GuildApply::load(data)?;
+    let successful = guild_apply.remove(data, game_name.clone())?;
+
+    if successful {
+        ctx.say(format!("{} was removed from the apply list!", game_name))
+            .await?;
+    } else {
+        ctx.say(format!(
+            "{} could not be found in the apply list...",
+            game_name
+        ))
+        .await?;
     }
 
     Ok(())

@@ -1,5 +1,6 @@
 use self::{
-    active_collectors::ActiveCollectors, games::Games, role_backups::RoleBackups, t_rooms::TRooms,
+    active_collectors::ActiveCollectors, games::Games, guild_apply::GuildApply,
+    role_backups::RoleBackups, t_rooms::TRooms,
 };
 use crate::state::admins::Admins;
 use poise::serenity_prelude::{Cache, Role, RoleId};
@@ -9,6 +10,7 @@ use shuttle_persist::{PersistError, PersistInstance};
 pub mod active_collectors;
 pub mod admins;
 pub mod games;
+pub mod guild_apply;
 pub mod role_backups;
 pub mod t_rooms;
 
@@ -30,6 +32,7 @@ pub fn init_all_state(data: &Data) -> Result<(), PersistError> {
     ActiveCollectors::init_state(data)?;
     RoleBackups::init_state(data)?;
     TRooms::init_state(data)?;
+    GuildApply::init_state(data)?;
 
     Ok(())
 }
@@ -112,6 +115,47 @@ pub trait SnowflakeStorage: BotStateInitialization + Clone {
     fn snowflakes(&self) -> std::slice::Iter<'_, u64>;
 }
 
+pub trait SnowflakeHashmapStorage: BotStateInitialization + Clone {
+    fn load(data: &Data) -> Result<Self, crate::Error>
+    where
+        for<'de> Self: Deserialize<'de>;
+
+    fn add(&mut self, data: &Data, key: String, value: u64) -> Result<bool, crate::Error>
+    where
+        for<'de> Self: Serialize,
+    {
+        if !self.snowflake_key_found(&key) && !self.snowflake_value_found(&value) {
+            self.push_kv_inner(key, value);
+
+            data.bot_state.save::<Self>(&self.get_key(), self.clone())?;
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
+
+    fn remove(&mut self, data: &Data, key: String) -> Result<bool, crate::Error>
+    where
+        for<'de> Self: Serialize,
+    {
+        let index = self.all().position(|i| i.0 == &key);
+
+        match index {
+            Some(_index) => {
+                self.remove_inner(key);
+                data.bot_state.save::<Self>(&self.get_key(), self.clone())?;
+                Ok(true)
+            }
+            None => Ok(false),
+        }
+    }
+
+    fn snowflake_key_found(&self, key: &String) -> bool;
+    fn snowflake_value_found(&self, value: &u64) -> bool;
+    fn push_kv_inner(&mut self, key: String, value: u64);
+    fn remove_inner(&mut self, key: String);
+    fn all(&self) -> std::collections::hash_map::Iter<'_, std::string::String, u64>;
+}
 pub trait SnowflakesToRoles: SnowflakeStorage {
     fn to_roles(&self, cache: &Cache) -> Vec<Role> {
         let snowflakes = self.snowflakes();

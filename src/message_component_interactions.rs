@@ -28,6 +28,7 @@ pub async fn handle(
         }
     }
 
+    // If no valid interaction was executed
     invalid_interaction(ctx, message_component_interaction, &custom_id).await?;
 
     Ok(())
