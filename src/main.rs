@@ -49,9 +49,24 @@ async fn event_handler(
         poise::Event::GuildMemberRemoval {
             guild_id: _,
             user,
-            member_data_if_available: _,
+            member_data_if_available,
         } => {
-            let event = UserEvent::UserLeave(user.id);
+            let cache = ctx.cache();
+
+            let event = match cache {
+                Some(cache) => {
+                    let all_roles = member_data_if_available.as_ref().unwrap();
+                    let all_roles = all_roles.roles(cache);
+
+                    if let Some(all_roles) = all_roles {
+                        UserEvent::UserLeave(user.id, all_roles)
+                    } else {
+                        UserEvent::UserLeave(user.id, vec![])
+                    }
+                }
+                None => UserEvent::UserLeave(user.id, vec![]),
+            };
+
             event.post_to_log_channel(ctx, data).await?;
         }
         poise::Event::GuildBanAddition {

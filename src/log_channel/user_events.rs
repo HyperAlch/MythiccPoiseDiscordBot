@@ -4,7 +4,7 @@ use chrono::Utc;
 use poise::serenity_prelude::{
     self as serenity,
     colours::branding::{GREEN, RED, YELLOW},
-    ChannelId, CreateEmbedAuthor, CreateEmbedFooter, Member, RoleId, UserId,
+    ChannelId, CreateEmbedAuthor, CreateEmbedFooter, Member, Role, RoleId, UserId,
 };
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
 
 pub enum UserEvent {
     UserJoin(UserId),
-    UserLeave(UserId),
+    UserLeave(UserId, Vec<Role>),
     UserBan(UserId),
     UserUnban(UserId),
     UserChange(UserId, UserChangeType),
@@ -111,9 +111,18 @@ impl UserEvent {
         ctx: &serenity::Context,
         data: &Data,
         user_id: UserId,
+        all_roles: Vec<Role>,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_major_event_channel(data);
         let user = user_id.to_user(&ctx.http).await?;
+
+        let all_roles: Vec<String> = all_roles
+            .iter()
+            .map(|x| x.id)
+            .map(|x| x.get_interactive())
+            .collect();
+
+        let all_roles = all_roles.join(" ");
 
         target_channel
             .send_message(&ctx.http, |m| {
@@ -134,6 +143,7 @@ impl UserEvent {
                         .timestamp(Utc::now())
                         .set_author(author)
                         .field("Account Age", account_age, true)
+                        .field("Roles", all_roles, false)
                         .set_footer(footer)
                 })
             })
@@ -281,8 +291,8 @@ impl UserEvent {
             Self::UserJoin(user_id) => {
                 Self::execute_user_joined_guild_log(ctx, data, *user_id).await?;
             }
-            Self::UserLeave(user_id) => {
-                Self::execute_user_left_guild_log(ctx, data, *user_id).await?;
+            Self::UserLeave(user_id, all_roles) => {
+                Self::execute_user_left_guild_log(ctx, data, *user_id, all_roles.clone()).await?;
             }
             Self::UserBan(user_id) => {
                 Self::execute_user_ban_guild_log(ctx, data, *user_id).await?;
