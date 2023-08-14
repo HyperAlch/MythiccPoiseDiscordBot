@@ -1,18 +1,16 @@
-use crate::{extensions::InteractiveSnowflakeExt, state::init_all_state};
+use crate::state::init_all_state;
 use anyhow::Context as _;
 use log_channel::{
     user_events::{UserChangeType, UserEvent},
     voice_events::VoiceEvent,
 };
-use poise::serenity_prelude::{
-    self as serenity, CacheHttp, ChannelId, GuildId, Interaction, RoleId,
-};
+use poise::serenity_prelude::{self as serenity, CacheHttp, GuildId, Interaction, RoleId};
 use serenity::GatewayIntents;
 use shuttle_persist::PersistInstance;
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 use state::Data;
-use std::{panic, println, str::FromStr};
+use std::{panic, str::FromStr};
 
 mod checks;
 mod constants;
@@ -93,7 +91,6 @@ async fn event_handler(
                                 .filter(|x| data.guild_apply_roles.contains(*x))
                                 .collect();
                             if added_roles.len() > 0 {
-                                println!("Detected: {:?}", added_roles);
                                 let needs_to_apply_role =
                                     RoleId::from_str(&data.needs_to_apply_role)
                                         .expect("NEEDS_TO_APPLY_ROLE is not valid");
@@ -103,16 +100,10 @@ async fn event_handler(
                                     new_member.add_role(ctx.http(), needs_to_apply_role).await?;
                                 }
 
-                                let needs_to_apply_channel = &data.needs_to_apply_channel;
-                                let needs_to_apply_channel =
-                                    ChannelId::from_str(&needs_to_apply_channel)
-                                        .expect("NEEDS_TO_APPLY_CHANNEL is not valid");
-
                                 new.user
                                     .direct_message(ctx.http(), |m| {
                                         m.content(format!(
-                                            "# Guild Application Required!\nPlease apply at {}",
-                                            needs_to_apply_channel.get_interactive()
+                                            "# Guild Application Required!\n`Right Click` yourself IN THE MYTHICC DISCORD, select `Apps`, and then `Guild Apply`"
                                         ))
                                     })
                                     .await?;
@@ -227,9 +218,10 @@ async fn poise(
                 slash_commands::prune(),
                 slash_commands::pick_games_menu(),
                 slash_commands::unlock_triggered_channel(),
-                slash_commands::add_guild_application(),
-                slash_commands::list_guild_application(),
-                slash_commands::remove_guild_application(),
+                // slash_commands::add_guild_application(),
+                // slash_commands::list_guild_application(),
+                // slash_commands::remove_guild_application(),
+                context_commands::archeage_apply(),
                 context_commands::triggered(),
                 context_commands::release_trigger(),
             ],

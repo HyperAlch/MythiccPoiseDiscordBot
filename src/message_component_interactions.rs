@@ -5,6 +5,7 @@ use poise::serenity_prelude::MessageComponentInteraction;
 use poise::serenity_prelude::{self as serenity};
 use std::{format, vec};
 
+mod guild_apply_menu;
 mod pick_games_menu;
 
 pub async fn handle(
@@ -15,9 +16,10 @@ pub async fn handle(
     let custom_id = CustomId::new(&message_component_interaction.data.custom_id);
 
     // List all interaction structs here
-    let all_interactions = AllInteractions(vec![Box::new(
-        pick_games_menu::PickGamesMenu::new(&custom_id).unwrap_or_default(),
-    )]);
+    let all_interactions = AllInteractions(vec![
+        Box::new(pick_games_menu::PickGamesMenu::new(&custom_id).unwrap_or_default()),
+        Box::new(guild_apply_menu::GuildApplyMenu::new(&custom_id).unwrap_or_default()),
+    ]);
 
     for interaction in all_interactions.0 {
         let result = interaction

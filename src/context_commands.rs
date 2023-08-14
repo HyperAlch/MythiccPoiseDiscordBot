@@ -3,14 +3,100 @@ use crate::checks::is_on_admin_list;
 use crate::extensions::InteractiveSnowflakeExt;
 use crate::state::role_backups::RoleBackups;
 use crate::state::t_rooms::TRooms;
+use crate::state::Data;
+use crate::utils::discord_cdn::get_avatar_url;
 use crate::Context;
 use crate::Error;
+use poise::serenity_prelude::colours::roles::DARK_PURPLE;
 use poise::serenity_prelude::CacheHttp;
 use poise::serenity_prelude::ChannelId;
+use poise::serenity_prelude::CreateEmbedAuthor;
 use poise::serenity_prelude::RoleId;
 use poise::serenity_prelude::{self as serenity};
+use poise::Modal;
 use std::format;
 use std::str::FromStr;
+
+type ApplicationContext<'a> = poise::ApplicationContext<'a, Data, Error>;
+
+#[derive(Debug, Modal)]
+#[name = "Apply to guild"] // Struct name by default
+struct GuildApplyUserModal {
+    #[name = "Your EXACT in-game name"] // Field name by default
+    #[placeholder = "leeroy jenkins"] // No placeholder by default
+    #[min_length = 1] // No length restriction by default (so, 1-4000 chars)
+    #[max_length = 32]
+    in_game_name: String,
+}
+
+/// "Apply to the guild"
+#[poise::command(context_menu_command = "Guild Apply", ephemeral)]
+pub async fn archeage_apply(
+    ctx: ApplicationContext<'_>,
+    #[description = "Apply for ArcheAge guild membership"] user: serenity::User,
+) -> Result<(), Error> {
+    let author = ctx.author();
+    if &user != author {
+        ctx.say("Select YOURSELF retard!").await?;
+        return Ok(());
+    }
+
+    let http = ctx.serenity_context().http();
+    let needs_to_apply_role = ctx.data().needs_to_apply_role.clone();
+    let needs_to_apply_role = RoleId::from_str(&needs_to_apply_role).unwrap();
+    let has_role = user
+        .has_role(http, ctx.guild_id().unwrap(), needs_to_apply_role)
+        .await?;
+
+    if !has_role {
+        ctx.say("Application already sent OR you never selected a supported game while joining")
+            .await?;
+        return Ok(());
+    }
+    let res = GuildApplyUserModal::execute(ctx).await?;
+
+    let res = match res {
+        Some(modal_data) => {
+            let needs_to_apply_channel = ctx.data().needs_to_apply_channel.clone();
+            let needs_to_apply_channel = ChannelId::from_str(&needs_to_apply_channel)?;
+
+            let member = ctx.guild_id().unwrap();
+            let mut member = member.member(http, user.id).await?;
+            let nickname = modal_data.in_game_name.clone();
+            member.edit(http, |x| x.nickname(&nickname)).await?;
+            member.remove_role(http, needs_to_apply_role).await?;
+
+            needs_to_apply_channel
+                .send_message(http, |m| {
+                    m.embed(|e| {
+                        let mut author = CreateEmbedAuthor::default();
+                        author.icon_url(get_avatar_url(&member.user));
+
+                        e.title("Guild Application Request")
+                            .color(DARK_PURPLE)
+                            .description(
+                                "Please DONT delete this after promoting or rejecting an applicant",
+                            )
+                            .set_author(author)
+                            .field("Discord Username", &member.user.name, true)
+                            .field(
+                                "Display Name",
+                                format!("{}", member.user.id.get_interactive(),),
+                                true,
+                            )
+                            .field("In-Game Name", nickname, false)
+                    })
+                })
+                .await?;
+
+            ctx.say("Guild Application was sent!").await
+        }
+        None => ctx.say("No information was sent...").await,
+    };
+
+    res?;
+    Ok(())
+}
 
 /// "User is triggered, contain the cancer!"
 #[poise::command(

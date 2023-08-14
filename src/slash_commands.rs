@@ -324,3 +324,61 @@ pub async fn remove_guild_application(
 
     Ok(())
 }
+
+/// Setup the 'Guild Apply' menu
+#[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
+pub async fn guild_apply_menu(ctx: Context<'_>) -> Result<(), Error> {
+    let data = ctx.data();
+    let guild_apply = GuildApply::load(data)?;
+    let guild_apply = guild_apply.all();
+
+    let mut instructions = "".to_string();
+
+    instructions.push_str("At times, Mythicc may support multiple games at once.\n\n");
+    instructions.push_str("Pick the game you would like to apply for, and a popup window asking for your in-game name will appear. Fill this out and your guild application will be sent to the admins!\n\n");
+    instructions
+        .push_str("*Keep an eye on your DMs to see if your guild application was accepted!*\n\n");
+    instructions.push_str("**[IMPORTANT]\nThe name you submit must match your in-game name EXACTLY. Failure to do this may result in a application rejection!**");
+
+    ctx.send(|b| {
+        b.content("~ Pick Your Games ~")
+            .embed(|e| {
+                e.title("Instructions")
+                    .color(BLACK)
+                    .description(instructions)
+            })
+            .components(|c| {
+                c.create_action_row(|row| {
+                    // An action row can only contain one select menu!
+                    row.create_select_menu(|menu| {
+                        menu.custom_id(CustomId::GuildApply.to_string());
+                        menu.placeholder("Nothing selected");
+                        if guild_apply.len() > 0 {
+                            menu.max_values(1);
+                            menu.options(move |menu_options| {
+                                guild_apply.for_each(|x| {
+                                    menu_options
+                                        .create_option(|option| option.label(x.0).value(x.1));
+                                });
+                                menu_options
+                            })
+                        } else {
+                            menu.max_values(1);
+                            menu.custom_id(CustomId::Invalid.to_string());
+                            menu.options(move |menu_options| {
+                                menu_options.create_option(|option| {
+                                    option
+                                        .label("Error: Please add a game / channel union to state")
+                                        .value("__invalid__")
+                                });
+                                menu_options
+                            })
+                        }
+                    })
+                })
+            })
+    })
+    .await?;
+
+    Ok(())
+}

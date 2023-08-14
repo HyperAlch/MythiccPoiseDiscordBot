@@ -8,11 +8,10 @@ use async_trait::async_trait;
 use chrono::Utc;
 use poise::serenity_prelude::colours::branding::{RED, YELLOW};
 use poise::serenity_prelude::{
-    self as serenity, ChannelId, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter,
+    self as serenity, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter,
 };
 use poise::serenity_prelude::{InteractionResponseType, MessageComponentInteraction};
 use poise::serenity_prelude::{Role, RoleId};
-use std::str::FromStr;
 use std::vec;
 
 #[derive(Default)]
@@ -212,12 +211,7 @@ impl PickGamesMenu {
 
                                 let mut e2 = CreateEmbed::default();
                                 e2.title("Guild Application Required!")
-                                    .description(format!(
-                                        "Please apply at {}",
-                                        ChannelId::from_str(&data.needs_to_apply_channel)
-                                            .expect("NEEDS_TO_APPLY_CHANNEL is not valid")
-                                            .get_interactive()
-                                    ))
+                                    .description("# Guild Application Required!\n`Right Click` yourself IN THE MYTHICC DISCORD, select `Apps`, and then `Guild Apply`")
                                     .color(RED);
 
                                 if guild_apply_roles.len() > 0 {
