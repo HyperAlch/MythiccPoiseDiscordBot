@@ -1,10 +1,13 @@
 use crate::state::init_all_state;
 use anyhow::Context as _;
+use extensions::InteractiveSnowflakeExt;
 use log_channel::{
     user_events::{UserChangeType, UserEvent},
     voice_events::VoiceEvent,
 };
-use poise::serenity_prelude::{self as serenity, CacheHttp, GuildId, Interaction, RoleId};
+use poise::serenity_prelude::{
+    self as serenity, CacheHttp, ChannelId, GuildId, Interaction, RoleId,
+};
 use serenity::GatewayIntents;
 use shuttle_persist::PersistInstance;
 use shuttle_poise::ShuttlePoise;
@@ -118,7 +121,10 @@ async fn event_handler(
                                 new.user
                                     .direct_message(ctx.http(), |m| {
                                         m.content(format!(
-                                            "# Guild Application Required!\nStep 1: Move to any room you can type in\nStep 2: `Right Click` yourself IN THE MYTHICC DISCORD, select `Apps`, and then `Guild Apply`"
+                                            "# Guild Application Required!\n{}",
+                                            ChannelId::from_str("1140501142154006598")
+                                                .unwrap()
+                                                .get_interactive()
                                         ))
                                     })
                                     .await?;
