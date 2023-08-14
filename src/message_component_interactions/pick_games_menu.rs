@@ -211,7 +211,7 @@ impl PickGamesMenu {
 
                                 let mut e2 = CreateEmbed::default();
                                 e2.title("Guild Application Required!")
-                                    .description("# Guild Application Required!\n`Right Click` yourself IN THE MYTHICC DISCORD, select `Apps`, and then `Guild Apply`")
+                                    .description("# Guild Application Required!\n***Step 1: Move to any room you can type in***\nStep 2: `Right Click` yourself IN THE MYTHICC DISCORD, select `Apps`, and then `Guild Apply`")
                                     .color(RED);
 
                                 if guild_apply_roles.len() > 0 {

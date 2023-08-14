@@ -118,7 +118,7 @@ async fn event_handler(
                                 new.user
                                     .direct_message(ctx.http(), |m| {
                                         m.content(format!(
-                                            "# Guild Application Required!\n`Right Click` yourself IN THE MYTHICC DISCORD, select `Apps`, and then `Guild Apply`"
+                                            "# Guild Application Required!\nStep 1: Move to any room you can type in\nStep 2: `Right Click` yourself IN THE MYTHICC DISCORD, select `Apps`, and then `Guild Apply`"
                                         ))
                                     })
                                     .await?;
