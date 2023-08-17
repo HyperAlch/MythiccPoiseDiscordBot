@@ -1,13 +1,10 @@
 use crate::state::init_all_state;
 use anyhow::Context as _;
-use extensions::InteractiveSnowflakeExt;
 use log_channel::{
     user_events::{UserChangeType, UserEvent},
     voice_events::VoiceEvent,
 };
-use poise::serenity_prelude::{
-    self as serenity, CacheHttp, ChannelId, GuildId, Interaction, RoleId,
-};
+use poise::serenity_prelude::{self as serenity, CacheHttp, GuildId, Interaction, RoleId};
 use serenity::GatewayIntents;
 use shuttle_persist::PersistInstance;
 use shuttle_poise::ShuttlePoise;
@@ -97,41 +94,6 @@ async fn event_handler(
             if let Some(old) = old_if_available {
                 let event = UserEvent::UserChange(new.user.id, UserChangeType::new(old, new));
                 event.post_to_log_channel(ctx, data).await?;
-
-                if let UserEvent::UserChange(_user_id, change_type) = event {
-                    if let UserChangeType::RolesChanged(role_state) = change_type {
-                        if role_state.added().len() > 0 {
-                            let added_roles: Vec<String> =
-                                role_state.added().iter().map(|x| x.to_string()).collect();
-
-                            let added_roles: Vec<&String> = added_roles
-                                .iter()
-                                .filter(|x| data.guild_apply_roles.contains(*x))
-                                .collect();
-                            if added_roles.len() > 0 {
-                                let needs_to_apply_role =
-                                    RoleId::from_str(&data.needs_to_apply_role)
-                                        .expect("NEEDS_TO_APPLY_ROLE is not valid");
-
-                                {
-                                    let mut new_member = new.clone();
-                                    new_member.add_role(ctx.http(), needs_to_apply_role).await?;
-                                }
-
-                                new.user
-                                    .direct_message(ctx.http(), |m| {
-                                        m.content(format!(
-                                            "# Guild Application Required!\n{}",
-                                            ChannelId::from_str("1140501142154006598")
-                                                .unwrap()
-                                                .get_interactive()
-                                        ))
-                                    })
-                                    .await?;
-                            }
-                        }
-                    }
-                }
             }
         }
         poise::Event::InteractionCreate { interaction } => match interaction {
