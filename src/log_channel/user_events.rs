@@ -1,11 +1,10 @@
-use std::str::FromStr;
-
 use chrono::Utc;
 use poise::serenity_prelude::{
     self as serenity,
     colours::branding::{GREEN, RED, YELLOW},
     ChannelId, CreateEmbedAuthor, CreateEmbedFooter, Member, Role, RoleId, UserId,
 };
+use std::str::FromStr;
 
 use crate::{
     extensions::InteractiveSnowflakeExt,
@@ -23,13 +22,16 @@ pub enum UserEvent {
 
 pub enum UserChangeType {
     RolesChanged(RoleState),
+    NickNameChanged(Option<String>, Option<String>),
     Unknown,
 }
 
 // Core functionality
 impl UserChangeType {
     pub fn new(old_state: &Member, new_state: &Member) -> Self {
-        if old_state.roles != new_state.roles {
+        if old_state.nick != new_state.nick {
+            UserChangeType::NickNameChanged(old_state.nick.clone(), new_state.nick.clone())
+        } else if old_state.roles != new_state.roles {
             UserChangeType::RolesChanged(Self::get_role_changes(old_state, new_state))
         } else {
             UserChangeType::Unknown
@@ -217,7 +219,7 @@ impl UserEvent {
         Ok(())
     }
 
-    async fn execute_user_changed_log(
+    async fn execute_user_roles_changed_log(
         ctx: &serenity::Context,
         data: &Data,
         user_id: UserId,
@@ -274,6 +276,52 @@ impl UserEvent {
 
         Ok(())
     }
+
+    async fn execute_user_nickname_changed_log(
+        ctx: &serenity::Context,
+        data: &Data,
+        user_id: UserId,
+        old_nickname: &Option<String>,
+        new_nickname: &Option<String>,
+    ) -> Result<(), crate::Error> {
+        let target_channel = Self::get_major_event_channel(data);
+        let user = user_id.to_user(&ctx.http).await?;
+
+        target_channel
+            .send_message(&ctx.http, |m| {
+                m.embed(|e| {
+                    let mut author = CreateEmbedAuthor::default();
+                    author.icon_url(get_avatar_url(&user));
+                    author.name(user.name.clone());
+
+                    let mut footer = CreateEmbedFooter::default();
+                    footer.text(format!("User ID: {}", user.id));
+
+                    let embed = e.title("Nickname Changed").color(YELLOW);
+
+                    if let Some(old_nickname) = old_nickname {
+                        embed.field("Old Nickname", old_nickname, true);
+                    } else {
+                        embed.field("Old Nickname", "*Default Nickname*", true);
+                    }
+
+                    if let Some(new_nickname) = new_nickname {
+                        embed.field("New Nickname", new_nickname, true);
+                    } else {
+                        embed.field("New Nickname", "*Default Nickname*", true);
+                    }
+
+                    embed
+                        .timestamp(Utc::now())
+                        .set_author(author)
+                        .field("Username", format!("{}", user.id.get_interactive()), false)
+                        .set_footer(footer)
+                })
+            })
+            .await?;
+
+        Ok(())
+    }
 }
 
 // Core functionality
@@ -298,7 +346,17 @@ impl UserEvent {
             }
             Self::UserChange(user_id, user_change_type) => match user_change_type {
                 UserChangeType::RolesChanged(role_state) => {
-                    Self::execute_user_changed_log(ctx, data, *user_id, role_state).await?;
+                    Self::execute_user_roles_changed_log(ctx, data, *user_id, role_state).await?;
+                }
+                UserChangeType::NickNameChanged(old_nickname, new_nickname) => {
+                    Self::execute_user_nickname_changed_log(
+                        ctx,
+                        data,
+                        *user_id,
+                        old_nickname,
+                        new_nickname,
+                    )
+                    .await?
                 }
                 UserChangeType::Unknown => (),
             },
