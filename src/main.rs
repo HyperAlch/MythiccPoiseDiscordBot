@@ -177,6 +177,9 @@ async fn poise(
         t_ids.push((t_role, t_room));
     }
 
+    drop(t_roles);
+    drop(t_rooms);
+
     let intents = GatewayIntents::GUILDS
         | GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT

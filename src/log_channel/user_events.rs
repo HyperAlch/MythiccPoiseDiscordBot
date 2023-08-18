@@ -76,14 +76,14 @@ impl UserEvent {
         user_id: UserId,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_major_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         target_channel
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user.id));
@@ -112,7 +112,7 @@ impl UserEvent {
         all_roles: Vec<Role>,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_major_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         let all_roles: Vec<String> = all_roles
             .iter()
@@ -126,8 +126,8 @@ impl UserEvent {
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user.id));
@@ -156,14 +156,14 @@ impl UserEvent {
         user_id: UserId,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_major_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         target_channel
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user.id));
@@ -191,14 +191,14 @@ impl UserEvent {
         user_id: UserId,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_major_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         target_channel
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user.id));
@@ -226,7 +226,7 @@ impl UserEvent {
         role_state: &RoleState,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_major_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         let new_roles: String = role_state
             .added
@@ -246,8 +246,8 @@ impl UserEvent {
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user.id));
@@ -285,14 +285,14 @@ impl UserEvent {
         new_nickname: &Option<String>,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_major_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         target_channel
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user.id));

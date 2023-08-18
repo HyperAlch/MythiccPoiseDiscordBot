@@ -25,14 +25,14 @@ impl VoiceEvent {
         user_id: UserId,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_minor_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         target_channel
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user_id));
@@ -61,14 +61,14 @@ impl VoiceEvent {
         user_id: UserId,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_minor_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         target_channel
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user_id));
@@ -98,14 +98,14 @@ impl VoiceEvent {
         user_id: UserId,
     ) -> Result<(), crate::Error> {
         let target_channel = Self::get_minor_event_channel(data);
-        let user = user_id.to_user(&ctx.http).await?;
+        let user = &user_id.to_user(&ctx.http).await?;
 
         target_channel
             .send_message(&ctx.http, |m| {
                 m.embed(|e| {
                     let mut author = CreateEmbedAuthor::default();
-                    author.icon_url(get_avatar_url(&user));
-                    author.name(user.name.clone());
+                    author.icon_url(get_avatar_url(user));
+                    author.name(&user.name);
 
                     let mut footer = CreateEmbedFooter::default();
                     footer.text(format!("User ID: {}", user_id));

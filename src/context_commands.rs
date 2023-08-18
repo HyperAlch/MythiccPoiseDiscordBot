@@ -42,7 +42,7 @@ pub async fn archeage_apply(
     }
 
     let http = ctx.serenity_context().http();
-    let needs_to_apply_role = ctx.data().needs_to_apply_role.clone();
+    let needs_to_apply_role = ctx.data().needs_to_apply_role.as_ref();
     let needs_to_apply_role = RoleId::from_str(&needs_to_apply_role).unwrap();
     let has_role = user
         .has_role(http, ctx.guild_id().unwrap(), needs_to_apply_role)
@@ -56,14 +56,14 @@ pub async fn archeage_apply(
     let res = GuildApplyUserModal::execute(ctx).await?;
 
     let res = match res {
-        Some(modal_data) => {
-            let needs_to_apply_channel = ctx.data().needs_to_apply_channel.clone();
+        Some(ref modal_data) => {
+            let needs_to_apply_channel = ctx.data().needs_to_apply_channel.as_ref();
             let needs_to_apply_channel = ChannelId::from_str(&needs_to_apply_channel)?;
 
             let member = ctx.guild_id().unwrap();
             let mut member = member.member(http, user.id).await?;
-            let nickname = modal_data.in_game_name.clone();
-            member.edit(http, |x| x.nickname(&nickname)).await?;
+            let nickname = &modal_data.in_game_name;
+            member.edit(http, |x| x.nickname(nickname)).await?;
             member.remove_role(http, needs_to_apply_role).await?;
 
             needs_to_apply_channel
@@ -127,6 +127,7 @@ pub async fn triggered(
 
         if success {
             // Remove all current roles
+            // TODO: Extend `Member` to have a method that wipes all roles, this is better than the .clone() hack
             member.remove_roles(http, &member.roles.clone()).await?;
 
             // Give "triggered" role to user
@@ -191,6 +192,7 @@ pub async fn release_trigger(
 
         if let Some(extracted_roles) = extracted_roles {
             // Remove currently assigned roles
+            // TODO: Extend `Member` to have a method that wipes all roles, this is better than the .clone() hack
             member.remove_roles(http, &member.roles.clone()).await?;
 
             let extracted_roles: Vec<RoleId> =
