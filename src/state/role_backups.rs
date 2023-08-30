@@ -9,12 +9,15 @@ const KEY: &str = "role_backup";
 pub struct RoleBackups(HashMap<u64, Vec<u64>>);
 
 impl RoleBackups {
-    pub fn load(data: &Data) -> Result<Self, crate::Error>
+    pub fn load(data: &Data) -> Result<Self, anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>,
     {
-        let data = data.bot_state.load::<Self>(KEY)?;
-        Ok(data)
+        let data = data.bot_state.load::<Self>(KEY);
+        match data {
+            Ok(data) => Ok(data),
+            Err(e) => Err(anyhow::anyhow!("{}", e)),
+        }
     }
 
     pub fn add<U: Into<u64>, R: Into<u64>>(
@@ -22,7 +25,7 @@ impl RoleBackups {
         data: &Data,
         user_id: U,
         role_ids: &Vec<R>,
-    ) -> Result<bool, crate::Error>
+    ) -> Result<bool, anyhow::Error>
     where
         R: Copy,
     {
@@ -32,8 +35,11 @@ impl RoleBackups {
         if !self.0.contains_key(&user_id) {
             self.0.insert(user_id, role_ids);
 
-            data.bot_state.save(&self.get_key(), self.clone())?;
-            return Ok(true);
+            let result = data.bot_state.save(&self.get_key(), self.clone());
+            match result {
+                Ok(_) => return Ok(true),
+                Err(e) => return Err(anyhow::anyhow!("{}", e)),
+            }
         }
 
         Ok(false)
@@ -43,14 +49,16 @@ impl RoleBackups {
         &mut self,
         data: &Data,
         user_id: U,
-    ) -> Result<Option<Vec<u64>>, crate::Error> {
+    ) -> Result<Option<Vec<u64>>, anyhow::Error> {
         let user_id: u64 = user_id.into();
 
         if self.0.contains_key(&user_id) {
             let return_data = self.0.remove(&user_id);
-            data.bot_state.save(&self.get_key(), self.clone())?;
-
-            return Ok(return_data);
+            let result = data.bot_state.save(&self.get_key(), self.clone());
+            match result {
+                Ok(_) => return Ok(return_data),
+                Err(e) => return Err(anyhow::anyhow!("{}", e)),
+            }
         }
 
         Ok(None)

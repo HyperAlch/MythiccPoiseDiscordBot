@@ -30,12 +30,15 @@ impl BotStateInitialization for Games {
 }
 
 impl SnowflakeStorage for Games {
-    fn load(data: &Data) -> Result<Self, crate::Error>
+    fn load(data: &Data) -> Result<Self, anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>,
     {
-        let data = data.bot_state.load::<Self>(KEY)?;
-        Ok(data)
+        let data = data.bot_state.load::<Self>(KEY);
+        match data {
+            Ok(data) => Ok(data),
+            Err(e) => Err(anyhow::anyhow!("{}", e.to_string())),
+        }
     }
 
     fn snowflake_found(&self, id: &u64) -> bool {

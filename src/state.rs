@@ -26,7 +26,7 @@ pub struct Data {
     pub needs_to_apply_channel: String,
 }
 
-pub fn init_all_state(data: &Data) -> Result<(), PersistError> {
+pub fn init_all_state(data: &Data) -> Result<(), anyhow::Error> {
     Admins::init_state(data)?;
     Games::init_state(data)?;
     ActiveCollectors::init_state(data)?;
@@ -38,7 +38,10 @@ pub fn init_all_state(data: &Data) -> Result<(), PersistError> {
 }
 
 pub trait BotStateInitialization: std::default::Default {
-    fn init_state_inner<T: Default + Serialize>(&self, data: &Data) -> Result<(), PersistError>
+    fn init_state_inner<'a, T: Default + Serialize>(
+        &'a self,
+        data: &'a Data,
+    ) -> Result<(), PersistError>
     where
         for<'de> Self: Deserialize<'de>,
         Self: Serialize,
@@ -63,37 +66,43 @@ pub trait BotStateInitialization: std::default::Default {
 
     fn get_key(&self) -> String;
 
-    fn init_state(data: &Data) -> Result<(), PersistError>
+    fn init_state(data: &Data) -> Result<(), anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>,
-        Self: Serialize,
+        Self: Serialize + 'static,
     {
         let data_struct = Self::default();
-        data_struct.init_state_inner::<Self>(&data)?;
-        Ok(())
+        let result = data_struct.init_state_inner::<Self>(&data);
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(anyhow::anyhow!("{}", e.to_string())),
+        }
     }
 }
 
 pub trait SnowflakeStorage: BotStateInitialization + Clone {
-    fn load(data: &Data) -> Result<Self, crate::Error>
+    fn load(data: &Data) -> Result<Self, anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>;
 
-    fn add(&mut self, data: &Data, id: u64) -> Result<bool, crate::Error>
+    fn add(&mut self, data: &Data, id: u64) -> Result<bool, anyhow::Error>
     where
         for<'de> Self: Serialize,
     {
         if !self.snowflake_found(&id) {
             self.push_snowflake(id);
 
-            data.bot_state.save::<Self>(&self.get_key(), self.clone())?;
-            return Ok(true);
+            let result = data.bot_state.save::<Self>(&self.get_key(), self.clone());
+            match result {
+                Ok(_) => return Ok(true),
+                Err(e) => return Err(anyhow::anyhow!("{}", e.to_string())),
+            };
         }
 
         Ok(false)
     }
 
-    fn remove(&mut self, data: &Data, id: u64) -> Result<bool, crate::Error>
+    fn remove(&mut self, data: &Data, id: u64) -> Result<bool, anyhow::Error>
     where
         for<'de> Self: Serialize,
     {
@@ -102,11 +111,14 @@ pub trait SnowflakeStorage: BotStateInitialization + Clone {
         match index {
             Some(index) => {
                 self.remove_snowflake(index);
-                data.bot_state.save::<Self>(&self.get_key(), self.clone())?;
-                Ok(true)
+                let result = data.bot_state.save::<Self>(&self.get_key(), self.clone());
+                match result {
+                    Ok(_) => return Ok(true),
+                    Err(e) => return Err(anyhow::anyhow!("{}", e.to_string())),
+                }
             }
-            None => Ok(false),
-        }
+            None => return Ok(false),
+        };
     }
 
     fn snowflake_found(&self, id: &u64) -> bool;
@@ -116,25 +128,28 @@ pub trait SnowflakeStorage: BotStateInitialization + Clone {
 }
 
 pub trait SnowflakeHashmapStorage: BotStateInitialization + Clone {
-    fn load(data: &Data) -> Result<Self, crate::Error>
+    fn load(data: &Data) -> Result<Self, anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>;
 
-    fn add(&mut self, data: &Data, key: String, value: u64) -> Result<bool, crate::Error>
+    fn add(&mut self, data: &Data, key: String, value: u64) -> Result<bool, anyhow::Error>
     where
         for<'de> Self: Serialize,
     {
         if !self.snowflake_key_found(&key) && !self.snowflake_value_found(&value) {
             self.push_kv_inner(key, value);
 
-            data.bot_state.save::<Self>(&self.get_key(), self.clone())?;
-            return Ok(true);
+            let result = data.bot_state.save::<Self>(&self.get_key(), self.clone());
+            match result {
+                Ok(_) => return Ok(true),
+                Err(e) => return Err(anyhow::anyhow!("{}", e.to_string())),
+            }
         }
 
         Ok(false)
     }
 
-    fn remove(&mut self, data: &Data, key: String) -> Result<bool, crate::Error>
+    fn remove(&mut self, data: &Data, key: String) -> Result<bool, anyhow::Error>
     where
         for<'de> Self: Serialize,
     {
@@ -143,8 +158,11 @@ pub trait SnowflakeHashmapStorage: BotStateInitialization + Clone {
         match index {
             Some(_index) => {
                 self.remove_inner(key);
-                data.bot_state.save::<Self>(&self.get_key(), self.clone())?;
-                Ok(true)
+                let result = data.bot_state.save::<Self>(&self.get_key(), self.clone());
+                match result {
+                    Ok(_) => return Ok(true),
+                    Err(e) => return Err(anyhow::anyhow!("{}", e.to_string())),
+                }
             }
             None => Ok(false),
         }

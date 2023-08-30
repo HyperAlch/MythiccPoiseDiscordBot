@@ -23,18 +23,18 @@ impl BotStateInitialization for ActiveCollectors {
     {
         let key = &self.get_key();
         let state = &data.bot_state;
-        let _state_struct = state.save::<Self>(key, Self::default())?;
+        let _state_struct = state.save::<Self>(key, Self::default()).unwrap();
 
         Ok(())
     }
 }
 
 impl SnowflakeStorage for ActiveCollectors {
-    fn load(data: &Data) -> Result<Self, crate::Error>
+    fn load(data: &Data) -> Result<Self, anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>,
     {
-        let data = data.bot_state.load::<Self>(KEY)?;
+        let data = data.bot_state.load::<Self>(KEY).unwrap();
         Ok(data)
     }
 

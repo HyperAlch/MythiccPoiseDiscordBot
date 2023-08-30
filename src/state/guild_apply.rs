@@ -18,12 +18,15 @@ impl BotStateInitialization for GuildApply {
 }
 
 impl SnowflakeHashmapStorage for GuildApply {
-    fn load(data: &Data) -> Result<Self, crate::Error>
+    fn load(data: &Data) -> Result<Self, anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>,
     {
-        let data = data.bot_state.load::<Self>(KEY)?;
-        Ok(data)
+        let data = data.bot_state.load::<Self>(KEY);
+        match data {
+            Ok(data) => Ok(data),
+            Err(e) => Err(anyhow::anyhow!("{}", e.to_string())),
+        }
     }
 
     fn snowflake_key_found(&self, key: &String) -> bool {

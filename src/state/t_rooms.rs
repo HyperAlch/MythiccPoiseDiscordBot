@@ -76,21 +76,26 @@ impl TRooms {
         Ok(None)
     }
 
-    pub fn save(&self, data: &Data) -> Result<(), crate::Error> {
-        data.bot_state.save(&self.get_key(), self.clone())?;
-
-        Ok(())
+    pub fn save(&self, data: &Data) -> Result<(), anyhow::Error> {
+        let result = data.bot_state.save(&self.get_key(), self.clone());
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => return Err(anyhow::anyhow!("{}", e)),
+        }
     }
 }
 
 // Core functionality
 impl TRooms {
-    pub fn load(data: &Data) -> Result<Self, crate::Error>
+    pub fn load(data: &Data) -> Result<Self, anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>,
     {
-        let data = data.bot_state.load::<Self>(KEY)?;
-        Ok(data)
+        let data = data.bot_state.load::<Self>(KEY);
+        match data {
+            Ok(data) => return Ok(data),
+            Err(e) => return Err(anyhow::anyhow!("{}", e)),
+        }
     }
 
     fn add(&mut self, data: &Data, room: Room) -> Result<(), crate::Error> {
@@ -107,13 +112,17 @@ impl BotStateInitialization for TRooms {
         KEY.to_string()
     }
 
-    fn init_state(data: &Data) -> Result<(), shuttle_persist::PersistError>
+    fn init_state(data: &Data) -> Result<(), anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>,
         Self: Serialize,
     {
         let mut data_struct = Self::default();
-        data_struct.init_state_inner::<Self>(&data)?;
+        let result = data_struct.init_state_inner::<Self>(&data);
+        match result {
+            Ok(_) => (),
+            Err(e) => return Err(anyhow::anyhow!("{}", e)),
+        };
 
         data.t_ids
             .clone()
