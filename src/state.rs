@@ -69,7 +69,7 @@ pub trait BotStateInitialization: std::default::Default {
     fn init_state(data: &Data) -> Result<(), anyhow::Error>
     where
         for<'de> Self: Deserialize<'de>,
-        Self: Serialize + 'static,
+        Self: Serialize,
     {
         let data_struct = Self::default();
         let result = data_struct.init_state_inner::<Self>(&data);

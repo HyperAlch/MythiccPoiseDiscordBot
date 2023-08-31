@@ -113,6 +113,11 @@ pub async fn triggered(
         return Ok(());
     }
 
+    if user.bot {
+        ctx.say("Can not execute action on a bot...").await?;
+        return Ok(());
+    }
+
     let author = ctx.author();
 
     let http = ctx.http();
@@ -180,6 +185,10 @@ pub async fn release_trigger(
     ctx: Context<'_>,
     #[description = "The triggered user"] user: serenity::User,
 ) -> Result<(), Error> {
+    if user.bot {
+        ctx.say("Can not execute action on a bot...").await?;
+        return Ok(());
+    }
     let http = ctx.http();
     let member = ctx.guild_id();
 
