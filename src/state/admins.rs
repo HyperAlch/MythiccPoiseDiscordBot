@@ -44,7 +44,7 @@ impl SnowflakeStorage for Admins {
         let data = data.bot_state.load::<Self>(KEY);
         match data {
             Ok(data) => Ok(data),
-            Err(e) => Err(anyhow::anyhow!("{}", e.to_string())),
+            Err(e) => Err(anyhow::anyhow!("{}", e)),
         }
     }
 

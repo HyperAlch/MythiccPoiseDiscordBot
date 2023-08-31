@@ -75,7 +75,7 @@ pub trait BotStateInitialization: std::default::Default {
         let result = data_struct.init_state_inner::<Self>(&data);
         match result {
             Ok(_) => Ok(()),
-            Err(e) => Err(anyhow::anyhow!("{}", e.to_string())),
+            Err(e) => Err(anyhow::anyhow!("{}", e)),
         }
     }
 }
@@ -95,7 +95,7 @@ pub trait SnowflakeStorage: BotStateInitialization + Clone {
             let result = data.bot_state.save::<Self>(&self.get_key(), self.clone());
             match result {
                 Ok(_) => return Ok(true),
-                Err(e) => return Err(anyhow::anyhow!("{}", e.to_string())),
+                Err(e) => return Err(anyhow::anyhow!("{}", e)),
             };
         }
 
@@ -114,7 +114,7 @@ pub trait SnowflakeStorage: BotStateInitialization + Clone {
                 let result = data.bot_state.save::<Self>(&self.get_key(), self.clone());
                 match result {
                     Ok(_) => return Ok(true),
-                    Err(e) => return Err(anyhow::anyhow!("{}", e.to_string())),
+                    Err(e) => return Err(anyhow::anyhow!("{}", e)),
                 }
             }
             None => return Ok(false),
@@ -142,7 +142,7 @@ pub trait SnowflakeHashmapStorage: BotStateInitialization + Clone {
             let result = data.bot_state.save::<Self>(&self.get_key(), self.clone());
             match result {
                 Ok(_) => return Ok(true),
-                Err(e) => return Err(anyhow::anyhow!("{}", e.to_string())),
+                Err(e) => return Err(anyhow::anyhow!("{}", e)),
             }
         }
 
@@ -161,7 +161,7 @@ pub trait SnowflakeHashmapStorage: BotStateInitialization + Clone {
                 let result = data.bot_state.save::<Self>(&self.get_key(), self.clone());
                 match result {
                     Ok(_) => return Ok(true),
-                    Err(e) => return Err(anyhow::anyhow!("{}", e.to_string())),
+                    Err(e) => return Err(anyhow::anyhow!("{}", e)),
                 }
             }
             None => Ok(false),
