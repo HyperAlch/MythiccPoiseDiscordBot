@@ -1,6 +1,7 @@
 /target
 Secrets.toml
 /shuttle_persist
+/.shuttle-storage
 /.vscode
 /temp
 /secrets/deploy/Secrets.toml
