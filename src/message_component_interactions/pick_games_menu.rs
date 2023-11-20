@@ -177,6 +177,9 @@ impl PickGamesMenu {
                 .filter(|x| data.guild_apply_roles.contains(*x))
                 .collect();
 
+            // Disable users from applying to the guild
+            let guild_apply_roles: Vec<&String> = vec![];
+
             if guild_apply_roles.len() > 0 {
                 let needs_to_apply_role = RoleId::from_str(&data.needs_to_apply_role)
                     .expect("NEEDS_TO_APPLY_ROLE is not valid");
