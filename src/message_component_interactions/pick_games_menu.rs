@@ -172,7 +172,7 @@ impl PickGamesMenu {
             let guild_apply_roles: Vec<String> =
                 selected_games.iter().map(|x| x.to_string()).collect();
 
-            let guild_apply_roles: Vec<&String> = guild_apply_roles
+            let _guild_apply_roles: Vec<&String> = guild_apply_roles
                 .iter()
                 .filter(|x| data.guild_apply_roles.contains(*x))
                 .collect();
